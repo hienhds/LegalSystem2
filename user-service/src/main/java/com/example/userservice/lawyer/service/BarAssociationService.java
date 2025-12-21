@@ -1,0 +1,24 @@
+package com.example.userservice.lawyer.service;
+
+import com.example.userservice.lawyer.dto.response.BarAssociationResponse;
+import com.example.userservice.lawyer.repository.BarAssociationRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class BarAssociationService {
+
+    private final BarAssociationRepository barAssociationRepository;
+
+    public List<BarAssociationResponse> getAllBarAssociation(){
+        return barAssociationRepository.findAll()
+                .stream()
+                .map(barAssociation -> new BarAssociationResponse(
+                        barAssociation.getBarAssociationId(),
+                        barAssociation.getAssociationName()
+                )).toList();
+    }
+}
