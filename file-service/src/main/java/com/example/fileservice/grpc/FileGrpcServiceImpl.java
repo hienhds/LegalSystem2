@@ -101,4 +101,94 @@ public class FileGrpcServiceImpl
         );
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void generatePreviewUrl(
+            FileIdRequest request,
+            StreamObserver<PresignedUrlResponse> responseObserver
+    ) {
+        repository.findById(request.getFileId())
+                .filter(doc -> "COMPLETED".equals(doc.getStatus()))
+                .ifPresentOrElse(doc -> {
+                    try {
+                        String url = minioService
+                                .generatePresignedPreviewUrl(doc.getObjectKey());
+
+                        responseObserver.onNext(
+                                PresignedUrlResponse.newBuilder()
+                                        .setSuccess(true)
+                                        .setPresignedUrl(url)
+                                        .setExpiredAt(
+                                                Instant.now()
+                                                        .plusSeconds(600)
+                                                        .toEpochMilli()
+                                        )
+                                        .build()
+                        );
+                    } catch (Exception e) {
+                        responseObserver.onNext(
+                                PresignedUrlResponse.newBuilder()
+                                        .setSuccess(false)
+                                        .setErrorMessage(e.getMessage())
+                                        .build()
+                        );
+                    }
+                    responseObserver.onCompleted();
+                }, () -> {
+                    responseObserver.onNext(
+                            PresignedUrlResponse.newBuilder()
+                                    .setSuccess(false)
+                                    .setErrorMessage("File not found or not ready")
+                                    .build()
+                    );
+                    responseObserver.onCompleted();
+                });
+    }
+
+    @Override
+    public void generateDownloadUrl(
+            GenerateDownloadUrlRequest request,
+            StreamObserver<PresignedUrlResponse> responseObserver
+    ) {
+        repository.findById(request.getFileId())
+                .filter(doc -> "COMPLETED".equals(doc.getStatus()))
+                .ifPresentOrElse(doc -> {
+                    try {
+                        String url = minioService
+                                .generatePresignedDownloadUrl(
+                                        doc.getObjectKey(),
+                                        request.getFileName()
+                                );
+
+                        responseObserver.onNext(
+                                PresignedUrlResponse.newBuilder()
+                                        .setSuccess(true)
+                                        .setPresignedUrl(url)
+                                        .setExpiredAt(
+                                                Instant.now()
+                                                        .plusSeconds(600)
+                                                        .toEpochMilli()
+                                        )
+                                        .build()
+                        );
+                    } catch (Exception e) {
+                        responseObserver.onNext(
+                                PresignedUrlResponse.newBuilder()
+                                        .setSuccess(false)
+                                        .setErrorMessage(e.getMessage())
+                                        .build()
+                        );
+                    }
+                    responseObserver.onCompleted();
+                }, () -> {
+                    responseObserver.onNext(
+                            PresignedUrlResponse.newBuilder()
+                                    .setSuccess(false)
+                                    .setErrorMessage("File not found or not ready")
+                                    .build()
+                    );
+                    responseObserver.onCompleted();
+                });
+    }
+
 }

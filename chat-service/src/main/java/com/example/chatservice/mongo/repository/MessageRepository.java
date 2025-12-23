@@ -58,4 +58,25 @@ public interface MessageRepository
             String cursorId,
             Pageable pageable
     );
+
+    @Query("""
+        {
+          'conversationId': ?0,
+          'type': ?1,
+          '$or': [
+            { 'timestamp': { '$lt': ?2 } },
+            {
+              'timestamp': ?2,
+              '_id': { '$lt': ?3 }
+            }
+          ]
+        }
+        """)
+    List<Message> findOlderFileMessages(
+            String conversationId,
+            Message.MessageType type,
+            LocalDateTime time,
+            String id,
+            Pageable pageable
+    );
 }

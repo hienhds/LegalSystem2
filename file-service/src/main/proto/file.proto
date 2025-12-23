@@ -22,6 +22,9 @@ service FileService {
   rpc GenerateDownloadUrl (GenerateDownloadUrlRequest)
       returns (PresignedUrlResponse);
 
+  rpc GeneratePreviewUrl(FileIdRequest)
+      returns (PresignedUrlResponse);
+
   // 3️⃣ Delete file
   rpc DeleteFile (DeleteFileRequest)
       returns (DeleteFileResponse);
@@ -49,6 +52,11 @@ message GenerateUploadUrlRequest {
 }
 
 message GenerateDownloadUrlRequest {
+  string file_id = 1;
+  string file_name = 2;
+}
+
+message FileIdRequest {
   string file_id = 1;
 }
 

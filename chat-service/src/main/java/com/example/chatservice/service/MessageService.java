@@ -2,9 +2,7 @@ package com.example.chatservice.service;
 
 import com.example.chatservice.dto.request.SendFileMessageRequest;
 import com.example.chatservice.dto.request.SendTextMessageRequest;
-import com.example.chatservice.dto.response.MessageListResponse;
-import com.example.chatservice.dto.response.MessageResponse;
-import com.example.chatservice.dto.response.PresignedFileResponse;
+import com.example.chatservice.dto.response.*;
 import com.example.chatservice.event.MessageEvent;
 import com.example.chatservice.exception.AppException;
 import com.example.chatservice.exception.ErrorType;
@@ -159,6 +157,77 @@ public class MessageService {
 
     }
 
+    @Transactional
+    public PresignedFileResponse generateFilePreviewUrl(
+            String conversationId,
+            Long senderId,
+            String fileId
+    ){
+        // validate phongf con hoat dong isActive khong
+
+        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                conversationId,
+                senderId,
+                List.of(
+                        ConversationMember.MemberStatus.OWNER,
+                        ConversationMember.MemberStatus.MEMBER
+                )
+        );
+
+        if(!isSender){
+            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+        }
+
+        PresignedUrlResponse grpcResponse = fileServiceGrpcClient.getPreviewUrl(fileId);
+
+        if (!grpcResponse.getSuccess()) {
+            throw new AppException(ErrorType.INTERNAL_ERROR, grpcResponse.getErrorMessage());
+        }
+
+        return PresignedFileResponse.builder()
+                .fileId(grpcResponse.getFileId())
+                .uploadUrl(grpcResponse.getPresignedUrl())
+                .expiredAt(grpcResponse.getExpiredAt())
+                .build();
+
+    }
+
+    @Transactional
+    public PresignedFileResponse generateFileDownloadUrl(
+            String conversationId,
+            Long senderId,
+            String fileId,
+            String fileName
+    ){
+        // validate phongf con hoat dong isActive khong
+
+        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                conversationId,
+                senderId,
+                List.of(
+                        ConversationMember.MemberStatus.OWNER,
+                        ConversationMember.MemberStatus.MEMBER
+                )
+        );
+
+        if(!isSender){
+            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+        }
+
+        PresignedUrlResponse grpcResponse = fileServiceGrpcClient.getDownloadUrl(fileId, fileName);
+
+        if (!grpcResponse.getSuccess()) {
+            throw new AppException(ErrorType.INTERNAL_ERROR, grpcResponse.getErrorMessage());
+        }
+
+        return PresignedFileResponse.builder()
+                .fileId(grpcResponse.getFileId())
+                .uploadUrl(grpcResponse.getPresignedUrl())
+                .expiredAt(grpcResponse.getExpiredAt())
+                .build();
+
+    }
+
 
 
 
@@ -280,6 +349,84 @@ public class MessageService {
                 .file(message.getFile())
                 .timestamp(message.getTimestamp())
                 .status(message.getStatus())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ConversationFileListResponse getConversationFiles(
+            String conversationId,
+            Long userId,
+            int limit,
+            String cursor
+    ) {
+        boolean isMember = memberRepository
+                .existsByConversation_IdAndUserIdAndMemberStatusIn(
+                        conversationId,
+                        userId,
+                        List.of(
+                                ConversationMember.MemberStatus.OWNER,
+                                ConversationMember.MemberStatus.MEMBER
+                        )
+                );
+
+        if (!isMember) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không phải thành viên");
+        }
+
+        if (limit <= 0 || limit > 50) {
+            throw new AppException(ErrorType.BAD_REQUEST, "Limit không hợp lệ");
+        }
+
+        Pageable pageable = PageRequest.of(0, limit + 1);
+        CursorData cursorData = parseCursor(cursor);
+
+        List<Message> messages;
+
+        if (cursorData == null) {
+            messages = messageRepository
+                    .findByConversationIdAndTypeOrderByTimestampDesc(
+                            conversationId,
+                            Message.MessageType.FILE,
+                            pageable
+                    );
+        } else {
+            messages = messageRepository
+                    .findOlderFileMessages(
+                            conversationId,
+                            Message.MessageType.FILE,
+                            cursorData.time(),
+                            cursorData.id(),
+                            pageable
+                    );
+        }
+
+        boolean hasMore = messages.size() > limit;
+        if (hasMore) {
+            messages = messages.subList(0, limit);
+        }
+
+        List<ConversationFileResponse> items = messages.stream()
+                .map(msg -> ConversationFileResponse.builder()
+                        .messageId(msg.getId())
+                        .fileId(msg.getFile().getFileId())
+                        .fileName(msg.getFile().getFileName())
+                        .fileSize(msg.getFile().getFileSize())
+                        .contentType(msg.getFile().getContentType())
+                        .senderId(msg.getSenderId())
+                        .senderName(msg.getSenderName())
+                        .sentAt(msg.getTimestamp())
+                        .build()
+                )
+                .toList();
+
+        String nextCursor = hasMore
+                ? encodeCursor(messages.get(messages.size() - 1))
+                : null;
+
+        return ConversationFileListResponse.builder()
+                .items(items)
+                .hasMore(hasMore)
+                .nextCursor(nextCursor)
                 .build();
     }
 

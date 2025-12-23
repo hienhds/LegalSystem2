@@ -37,4 +37,24 @@ public class FileServiceGrpcClient {
                         .build()
         );
     }
+
+    public PresignedUrlResponse getPreviewUrl(String fileId) {
+        return fileStub.generatePreviewUrl(
+                FileIdRequest.newBuilder()
+                        .setFileId(fileId)
+                        .build()
+        );
+    }
+
+    public PresignedUrlResponse getDownloadUrl(
+            String fileId,
+            String fileName
+    ) {
+        return fileStub.generateDownloadUrl(
+                GenerateDownloadUrlRequest.newBuilder()
+                        .setFileId(fileId)
+                        .setFileName(fileName)
+                        .build()
+        );
+    }
 }

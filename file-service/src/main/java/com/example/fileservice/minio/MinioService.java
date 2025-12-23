@@ -52,13 +52,32 @@ public class MinioService {
 
     }
 
-    public String generatePresignedDownloadUrl(String objectKey) throws Exception {
+    public String generatePresignedPreviewUrl(String objectKey) throws Exception{
         return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.GET)
                         .bucket(bucket)
                         .object(objectKey)
                         .expiry(presignedExpiryMinutes, TimeUnit.MINUTES)
+                        // "inline" giúp trình duyệt hiểu là cần hiển thị nội dung ngay lập tức
+                        .extraQueryParams(Map.of("response-content-disposition", "inline"))
+                        .build()
+        );
+    }
+
+
+    public String generatePresignedDownloadUrl(String objectKey, String fileName) throws Exception {
+        return minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .method(Method.GET)
+                        .bucket(bucket)
+                        .object(objectKey)
+                        .expiry(presignedExpiryMinutes, TimeUnit.MINUTES)
+                        // "attachment" ép trình duyệt tải xuống và đặt tên file mong muốn
+                        .extraQueryParams(Map.of(
+                                "response-content-disposition",
+                                "attachment; filename=\"" + fileName + "\""
+                        ))
                         .build()
         );
     }

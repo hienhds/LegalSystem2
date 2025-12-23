@@ -24,41 +24,6 @@ public class HandleMemberController {
     private final MemberService memberService;
     private final MessageService messageService;
 
-    // =========== load tin nhan =============
-    // =========== LOAD MESSAGES ===========
-    @GetMapping("/{conversationId}/messages")
-    public ResponseEntity<ApiResponse<MessageListResponse>> getMessages(
-            @PathVariable String conversationId,
-            @RequestParam(defaultValue = "20") int limit,
-            @RequestParam(required = false) String cursor,
-            HttpServletRequest request,
-            Authentication authentication
-    ) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        // (Optional nhưng KHUYẾN NGHỊ)
-        // Có thể check user có phải member không ở service
-        MessageListResponse data = messageService.getMessages(
-                conversationId,
-                limit,
-                cursor
-        );
-
-        return ResponseEntity.ok(
-                ApiResponse.<MessageListResponse>builder()
-                        .success(true)
-                        .status(HttpStatus.OK.value())
-                        .message("Lấy danh sách tin nhắn thành công")
-                        .data(data)
-                        .path(request.getRequestURI())
-                        .timestamp(Instant.now())
-                        .build()
-        );
-    }
-
-
-
-
     // ================= ADD MEMBER =================
 
     @PostMapping("/{conversationId}/members")
@@ -173,66 +138,5 @@ public class HandleMemberController {
                         .timestamp(Instant.now())
                         .build()
         );
-    }
-
-    @PostMapping("/{conversationId}/messages/text")
-    public ResponseEntity<ApiResponse<MessageResponse>> sendTextMessage(
-            @PathVariable String conversationId,
-            @RequestBody SendTextMessageRequest request,
-            HttpServletRequest servletRequest,
-            Authentication authentication
-    ) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        MessageResponse data = messageService.sendTextMessage(
-                conversationId,
-                userPrincipal.getUserId(),
-                userPrincipal.getFullName(),
-                userPrincipal.getAvatar(),
-                request
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<MessageResponse>builder()
-                        .success(true)
-                        .status(HttpStatus.CREATED.value())
-                        .message("Gửi tin nhắn thành công")
-                        .data(data)
-                        .path(servletRequest.getRequestURI())
-                        .timestamp(Instant.now())
-                        .build()
-        );
-    }
-
-    @PostMapping("/{conversationId}/messages/file")
-    public ResponseEntity<ApiResponse<PresignedFileResponse>> generateFileUrl(
-            @PathVariable String conversationId,
-            @RequestParam String fileName,
-            @RequestParam String contentType,
-            @RequestParam long fileSize,
-            HttpServletRequest servletRequest,
-            Authentication authentication
-    ) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        Long userId = userPrincipal.getUserId();
-        PresignedFileResponse presignedResponse =
-                messageService.generateFileUploadUrl(
-                        conversationId,
-                        userId,
-                        fileName,
-                        contentType,
-                        fileSize
-                );
-        ApiResponse<PresignedFileResponse> response =
-                ApiResponse.<PresignedFileResponse>builder()
-                        .success(true)
-                        .status(HttpStatus.OK.value())
-                        .message("Generate presigned url thành công")
-                        .data(presignedResponse)
-                        .path(servletRequest.getRequestURI())
-                        .timestamp(Instant.now())
-                        .build();
-
-        return ResponseEntity.ok(response);
     }
 }
