@@ -94,15 +94,4 @@ public class UserService {
         return userResponse;
     }
 
-    @Transactional(readOnly = true)
-    public List<UserSummary> getUserSummaries(Set<Long> ids) {
-        return userRepository.findByUserIdIn(ids)
-                .stream()
-                .map(u -> new UserSummary(
-                        u.getUserId(),
-                        u.getFullName(),
-                        u.getAvatarUrl()
-                ))
-                .toList();
-    }
 }

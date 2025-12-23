@@ -39,8 +39,11 @@ public class ConversationService {
     private final ConversationInviteService conversationInviteService;
     private final UserClient userClient;
 
+
+
+
     @Transactional
-    public ConversationResponse createConversation(ConversationRequest conversationRequest, Long creatorUserId, String fullName, String avatar){
+    public ConversationResponse createConversation(ConversationRequest conversationRequest, Long creatorUserId, String fullName, String avatar, List<String> roles){
         // ===== DIRECT VALIDATION =====
         if (conversationRequest.getType() == Conversation.ConversationType.DIRECT) {
 
@@ -74,6 +77,43 @@ public class ConversationService {
                         "Nhóm phải có ít nhất 3 người"
                 );
             }
+        }
+
+        if (conversationRequest.getType() == Conversation.ConversationType.PUBLIC) {
+
+            if (roles == null || !roles.contains("ADMIN")) {
+                throw new AppException(
+                        ErrorType.FORBIDDEN,
+                        "Chỉ ADMIN mới được tạo PUBLIC conversation"
+                );
+            }
+
+            Conversation conversation = Conversation.builder()
+                    .createdByUserId(creatorUserId)
+                    .ownerName(fullName)
+                    .ownerAvatar(avatar)
+                    .name(conversationRequest.getConversationName())
+                    .type(conversationRequest.getType())
+                    .note(conversationRequest.getNote())
+                    .updatedAt(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
+                    .isActive(true)
+                    .build();
+
+            conversation = conversationRepository.save(conversation);
+
+            ConversationResponse response = ConversationResponse.builder()
+                    .id(conversation.getId())
+                    .name(conversation.getName())
+                    .type(conversation.getType())
+                    .creatorId(conversation.getCreatedByUserId())
+                    .creatorFullName(fullName)
+                    .creatorAvatar(avatar)
+                    .build();
+
+            return response;
+
+
         }
 
         Conversation conversation = Conversation.builder()

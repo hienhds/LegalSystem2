@@ -1,5 +1,7 @@
 package com.example.chatservice.controller;
 
+import com.example.chatservice.client.UserClient;
+import com.example.chatservice.dto.UserSummary;
 import com.example.chatservice.dto.request.ConversationRequest;
 import com.example.chatservice.dto.response.ApiResponse;
 import com.example.chatservice.dto.response.ConversationListResponse;
@@ -15,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ import java.time.Instant;
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final UserClient userClient;
 
     // ================= CREATE CONVERSATION =================
 
@@ -39,13 +43,16 @@ public class ConversationController {
         String fullName = userPrincipal.getFullName();
         String avatar = userPrincipal.getAvatar();
 
+
         System.out.println("=======================================================");
         System.out.println("userId: " + senderId);
         System.out.println("fullName: " + fullName);
         System.out.println("=======================================================");
 
+        UserSummary userSummary = userClient.getUserById(senderId);
+
         ConversationResponse conversationResponse =
-                conversationService.createConversation(conversationRequest, senderId, fullName, avatar);
+                conversationService.createConversation(conversationRequest, senderId, fullName, avatar, userSummary.getRoles());
 
         ApiResponse<ConversationResponse> response =
                 ApiResponse.<ConversationResponse>builder()

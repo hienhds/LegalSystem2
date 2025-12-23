@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -40,8 +41,12 @@ public class UserController {
     @GetMapping("/internal/{id}")
     public UserSummary getInternalUserById(@PathVariable Long id){
         User user = userRepository.findByUserId(id);
+        List<String> roles = user.getUserRoles()
+                .stream()
+                .map(ur -> ur.getRole().getRoleName())
+                .toList();
 
-        return new UserSummary(id, user.getFullName(), user.getAvatarUrl());
+        return new UserSummary(id, user.getFullName(), user.getAvatarUrl(), roles);
     }
 
     @GetMapping("/{id}")

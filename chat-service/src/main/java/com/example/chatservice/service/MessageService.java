@@ -44,18 +44,24 @@ public class MessageService {
             SendTextMessageRequest request
     ){
         // validate phongf con hoat dong isActive khong
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong thay phong"));
 
-        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
-                conversationId,
-                senderId,
-                List.of(
-                        ConversationMember.MemberStatus.OWNER,
-                        ConversationMember.MemberStatus.MEMBER
-                )
-        );
+        if(conversation.getType() != Conversation.ConversationType.PUBLIC){
+            boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                   conversationId,
+                   senderId,
+                   List.of(
+                           ConversationMember.MemberStatus.OWNER,
+                           ConversationMember.MemberStatus.MEMBER
+                   )
+            );
 
-        if(!isSender){
-            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+
+
+            if(!isSender ){
+                throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+            }
         }
 
         if(request.getContent() == null || request.getContent().isBlank()){
@@ -74,9 +80,6 @@ public class MessageService {
         message.setStatus(Message.MessageStatus.SENT);
 
         messageRepository.save(message);
-
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong tim thay phongf"));
 
         conversation.setLastMessageAt(message.getTimestamp());
         conversation.setLastMessageText(message.getContent());
@@ -123,17 +126,24 @@ public class MessageService {
     ){
         // validate phongf con hoat dong isActive khong
 
-        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
-                conversationId,
-                senderId,
-                List.of(
-                        ConversationMember.MemberStatus.OWNER,
-                        ConversationMember.MemberStatus.MEMBER
-                )
-        );
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong thay phong"));
 
-        if(!isSender){
-            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+        if(conversation.getType() != Conversation.ConversationType.PUBLIC){
+            boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                    conversationId,
+                    senderId,
+                    List.of(
+                            ConversationMember.MemberStatus.OWNER,
+                            ConversationMember.MemberStatus.MEMBER
+                    )
+            );
+
+
+
+            if(!isSender ){
+                throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+            }
         }
 
         PresignedUrlResponse grpcResponse = fileServiceGrpcClient.generateUploadUrl(
@@ -165,17 +175,24 @@ public class MessageService {
     ){
         // validate phongf con hoat dong isActive khong
 
-        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
-                conversationId,
-                senderId,
-                List.of(
-                        ConversationMember.MemberStatus.OWNER,
-                        ConversationMember.MemberStatus.MEMBER
-                )
-        );
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong thay phong"));
 
-        if(!isSender){
-            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+        if(conversation.getType() != Conversation.ConversationType.PUBLIC){
+            boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                    conversationId,
+                    senderId,
+                    List.of(
+                            ConversationMember.MemberStatus.OWNER,
+                            ConversationMember.MemberStatus.MEMBER
+                    )
+            );
+
+
+
+            if(!isSender ){
+                throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+            }
         }
 
         PresignedUrlResponse grpcResponse = fileServiceGrpcClient.getPreviewUrl(fileId);
@@ -201,17 +218,24 @@ public class MessageService {
     ){
         // validate phongf con hoat dong isActive khong
 
-        boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
-                conversationId,
-                senderId,
-                List.of(
-                        ConversationMember.MemberStatus.OWNER,
-                        ConversationMember.MemberStatus.MEMBER
-                )
-        );
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong thay phong"));
 
-        if(!isSender){
-            throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+        if(conversation.getType() != Conversation.ConversationType.PUBLIC){
+            boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                    conversationId,
+                    senderId,
+                    List.of(
+                            ConversationMember.MemberStatus.OWNER,
+                            ConversationMember.MemberStatus.MEMBER
+                    )
+            );
+
+
+
+            if(!isSender ){
+                throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+            }
         }
 
         PresignedUrlResponse grpcResponse = fileServiceGrpcClient.getDownloadUrl(fileId, fileName);
@@ -359,18 +383,24 @@ public class MessageService {
             int limit,
             String cursor
     ) {
-        boolean isMember = memberRepository
-                .existsByConversation_IdAndUserIdAndMemberStatusIn(
-                        conversationId,
-                        userId,
-                        List.of(
-                                ConversationMember.MemberStatus.OWNER,
-                                ConversationMember.MemberStatus.MEMBER
-                        )
-                );
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong thay phong"));
 
-        if (!isMember) {
-            throw new AppException(ErrorType.FORBIDDEN, "Bạn không phải thành viên");
+        if(conversation.getType() != Conversation.ConversationType.PUBLIC){
+            boolean  isSender = memberRepository.existsByConversation_IdAndUserIdAndMemberStatusIn(
+                    conversationId,
+                    userId,
+                    List.of(
+                            ConversationMember.MemberStatus.OWNER,
+                            ConversationMember.MemberStatus.MEMBER
+                    )
+            );
+
+
+
+            if(!isSender ){
+                throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
+            }
         }
 
         if (limit <= 0 || limit > 50) {
