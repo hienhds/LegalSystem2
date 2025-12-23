@@ -31,4 +31,5 @@ public class FileMetadataDocument {
 
     private Instant uploadedAt;
     private String status; // PENDING | COMPLETED
+
 }

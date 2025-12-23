@@ -4,9 +4,12 @@ import com.example.chatservice.dto.request.SendFileMessageRequest;
 import com.example.chatservice.dto.request.SendTextMessageRequest;
 import com.example.chatservice.dto.response.MessageListResponse;
 import com.example.chatservice.dto.response.MessageResponse;
+import com.example.chatservice.dto.response.PresignedFileResponse;
 import com.example.chatservice.event.MessageEvent;
 import com.example.chatservice.exception.AppException;
 import com.example.chatservice.exception.ErrorType;
+import com.example.chatservice.grpc.FileServiceGrpcClient;
+import com.example.chatservice.grpc.PresignedUrlResponse;
 import com.example.chatservice.jpa.entity.Conversation;
 import com.example.chatservice.jpa.entity.ConversationMember;
 import com.example.chatservice.jpa.repository.ConversationMemberRepository;
@@ -33,6 +36,7 @@ public class MessageService {
     private final ConversationMemberRepository memberRepository;
     private final ConversationRepository conversationRepository;
     private final ChatEventProducer chatEventProducer;
+    private final FileServiceGrpcClient fileServiceGrpcClient;
     @Transactional
     public MessageResponse sendTextMessage(
             String conversationId,
@@ -112,12 +116,12 @@ public class MessageService {
 
     // send file
     @Transactional
-    public MessageResponse sendFileMessage(
+    public PresignedFileResponse generateFileUploadUrl(
             String conversationId,
             Long senderId,
-            String fullName,
-            String avatar,
-            SendFileMessageRequest request
+            String fileName,
+            String contentType,
+            long fileSize
     ){
         // validate phongf con hoat dong isActive khong
 
@@ -134,61 +138,28 @@ public class MessageService {
             throw new AppException(ErrorType.FORBIDDEN, "banj khong la thanh vien");
         }
 
-        Message.FileMeta fileMeta = new Message.FileMeta(
-                request.getFileId(),
-                request.getFileName(),
-                request.getFileUrl(),
-                request.getFileSize(),
-                request.getMimeType()
+        PresignedUrlResponse grpcResponse = fileServiceGrpcClient.generateUploadUrl(
+                fileName,
+                contentType,
+                fileSize,
+                "GROUP_SEND_FILE",
+                conversationId,
+                senderId
         );
 
-        Message message = new Message();
+        if (!grpcResponse.getSuccess()) {
+            throw new AppException(ErrorType.INTERNAL_ERROR, grpcResponse.getErrorMessage());
+        }
 
-        message.setConversationId(conversationId);
-        message.setSenderId(senderId);
-        message.setSenderName(fullName);
-        message.setSenderAvatar(avatar);
-        message.setFile(fileMeta);
-        message.setType(Message.MessageType.FILE);
-        message.setTimestamp(LocalDateTime.now());
-        message.setStatus(Message.MessageStatus.SENT);
-
-        messageRepository.save(message);
-
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(()-> new AppException(ErrorType.NOT_FOUND, "khong tim thay phongf"));
-
-        conversation.setLastMessageAt(message.getTimestamp());
-        conversation.setLastMessageText("📎 " + request.getFileName());
-        conversation.setLastMessageSenderName(message.getSenderName());
-
-        conversationRepository.save(conversation);
-
-        MessageEvent event = MessageEvent.builder()
-                .id(message.getId())
-                .conversationId(message.getId())
-                .senderId(message.getSenderId())
-                .senderName(message.getSenderName())
-                .senderAvatar(message.getSenderAvatar())
-                .type(message.getType())
-                .file(message.getFile())
-                .timestamp(message.getTimestamp())
+        return PresignedFileResponse.builder()
+                .fileId(grpcResponse.getFileId())
+                .uploadUrl(grpcResponse.getPresignedUrl())
+                .expiredAt(grpcResponse.getExpiredAt())
                 .build();
 
-        chatEventProducer.publishMessageCreated(event);
-
-        return MessageResponse.builder()
-                .messageId(message.getId())
-                .conversationId(conversationId)
-                .senderId(senderId)
-                .senderName(fullName)
-                .senderAvatar(avatar)
-                .type(message.getType())
-                .file(message.getFile())
-                .timestamp(message.getTimestamp())
-                .status(message.getStatus())
-                .build();
     }
+
+
 
 
     private static record CursorData(

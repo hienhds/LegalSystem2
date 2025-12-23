@@ -5,7 +5,7 @@ import com.example.chatservice.dto.UserSummary;
 import com.example.chatservice.dto.request.ConversationRequest;
 import com.example.chatservice.dto.response.ConversationListResponse;
 import com.example.chatservice.dto.response.ConversationResponse;
-import com.example.chatservice.dto.response.PresignedAvatarResponse;
+import com.example.chatservice.dto.response.PresignedFileResponse;
 import com.example.chatservice.jpa.entity.Conversation;
 import com.example.chatservice.jpa.entity.ConversationMember;
 import com.example.chatservice.event.ConversationCreatedEvent;
@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -136,7 +135,7 @@ public class ConversationService {
 
     // ============== UPLOAD AVATAR CONVERSATION ====================
     @Transactional
-    public PresignedAvatarResponse generateAvatarUploadUrl(
+    public PresignedFileResponse generateAvatarUploadUrl(
             String conversationId,
             String fileName,
             String contentType,
@@ -176,7 +175,7 @@ public class ConversationService {
             throw new AppException(ErrorType.INTERNAL_ERROR, grpcResponse.getErrorMessage());
         }
 
-        return PresignedAvatarResponse.builder()
+        return PresignedFileResponse.builder()
                 .fileId(grpcResponse.getFileId())
                 .uploadUrl(grpcResponse.getPresignedUrl())
                 .expiredAt(grpcResponse.getExpiredAt())

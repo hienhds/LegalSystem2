@@ -10,10 +10,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileUploadedEvent {
+
+    // ==== file ====
     private String fileId;
     private String bucket;
     private String objectKey;
-    private String businessType;
-    private String businessId;
+    private String fileName;
+    private Long fileSize;
     private String contentType;
+
+    // ==== business ====
+    private String businessType;   // GROUP_AVATAR | GROUP_SEND_FILE
+    private String businessId;     // conversationId
+
+    // ==== sender ====
+    private Long senderId;
 }

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PresignedAvatarResponse {
+public class PresignedFileResponse {
     private String fileId;
     private String uploadUrl;
     private long expiredAt;

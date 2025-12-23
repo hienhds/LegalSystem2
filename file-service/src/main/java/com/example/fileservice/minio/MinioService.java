@@ -3,6 +3,7 @@ package com.example.fileservice.minio;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MinioService {
 
 
@@ -35,7 +37,7 @@ public class MinioService {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", contentType);
 //        headers.put("Host", "localhost:9000");
-        return minioClient.getPresignedObjectUrl(
+        String url = minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.PUT)
                         .bucket(bucket)
@@ -44,6 +46,10 @@ public class MinioService {
                         .extraHeaders(headers)
                         .build()
         );
+
+        log.info("sinh thanh cong url ===========");
+        return url;
+
     }
 
     public String generatePresignedDownloadUrl(String objectKey) throws Exception {

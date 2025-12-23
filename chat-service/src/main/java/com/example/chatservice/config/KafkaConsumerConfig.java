@@ -46,7 +46,10 @@ public class KafkaConsumerConfig {
                 JsonDeserializer.class);
 
         props.put(JsonDeserializer.TRUSTED_PACKAGES,
-                "com.example.chatservice.event");
+                "*");
+
+        props.put(JsonDeserializer.TYPE_MAPPINGS,
+                "com.example.fileservice.event.FileUploadedEvent:com.example.chatservice.event.FileUploadedEvent");
 
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
 

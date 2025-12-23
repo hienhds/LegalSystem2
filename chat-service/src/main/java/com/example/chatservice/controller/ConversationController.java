@@ -4,7 +4,7 @@ import com.example.chatservice.dto.request.ConversationRequest;
 import com.example.chatservice.dto.response.ApiResponse;
 import com.example.chatservice.dto.response.ConversationListResponse;
 import com.example.chatservice.dto.response.ConversationResponse;
-import com.example.chatservice.dto.response.PresignedAvatarResponse;
+import com.example.chatservice.dto.response.PresignedFileResponse;
 import com.example.chatservice.middleware.UserPrincipal;
 import com.example.chatservice.service.ConversationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,9 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -68,7 +65,7 @@ public class ConversationController {
     // ================= GENERATE PRESIGNED AVATAR URL =================
 
     @PostMapping("/{conversationId}/avatar")
-    public ResponseEntity<ApiResponse<PresignedAvatarResponse>> generateAvatarPresignedUrl(
+    public ResponseEntity<ApiResponse<PresignedFileResponse>> generateAvatarPresignedUrl(
             @PathVariable String conversationId,
             @RequestParam String fileName,
             @RequestParam String contentType,
@@ -82,7 +79,7 @@ public class ConversationController {
         String fullName = userPrincipal.getFullName();
         String avatar = userPrincipal.getAvatar();
 
-        PresignedAvatarResponse presignedResponse =
+        PresignedFileResponse presignedResponse =
                 conversationService.generateAvatarUploadUrl(
                         conversationId,
                         fileName,
@@ -91,8 +88,8 @@ public class ConversationController {
                         userId
                 );
 
-        ApiResponse<PresignedAvatarResponse> response =
-                ApiResponse.<PresignedAvatarResponse>builder()
+        ApiResponse<PresignedFileResponse> response =
+                ApiResponse.<PresignedFileResponse>builder()
                         .success(true)
                         .status(HttpStatus.OK.value())
                         .message("Generate presigned url thành công")

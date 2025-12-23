@@ -1,20 +1,14 @@
 package com.example.chatservice.controller;
-import com.example.chatservice.dto.request.ConversationRequest;
 import com.example.chatservice.dto.response.ApiResponse;
-import com.example.chatservice.dto.response.ConversationResponse;
 import com.example.chatservice.dto.response.InviteListResponse;
-import com.example.chatservice.dto.response.PresignedAvatarResponse;
 import com.example.chatservice.middleware.UserPrincipal;
 import com.example.chatservice.service.ConversationInviteService;
-import com.example.chatservice.service.ConversationService;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;

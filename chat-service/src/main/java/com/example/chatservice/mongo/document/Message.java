@@ -73,6 +73,6 @@ public class Message {
         private String fileName;
         private String fileUrl;
         private Long fileSize;
-        private String mimeType;
+        private String contentType;
     }
 }

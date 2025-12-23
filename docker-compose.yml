@@ -289,10 +289,12 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+
       MINIO_NOTIFY_KAFKA_ENABLE_primary: "on"
       MINIO_NOTIFY_KAFKA_BROKERS_primary: "kafka:29092"
       MINIO_NOTIFY_KAFKA_TOPIC_primary: "minio-events"
-      MINIO_NOTIFY_KAFKA_VERSION_primary: "7.5.0"
+
+      # MINIO_NOTIFY_KAFKA_VERSION_primary: "7.5.0"
       # MINIO_SERVER_URL: http://localhost:9000
     command: server /data --console-address ":9001"
     volumes:

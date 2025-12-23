@@ -2,10 +2,7 @@ package com.example.chatservice.controller;
 import com.example.chatservice.dto.request.AddMemberRequest;
 import com.example.chatservice.dto.request.SendFileMessageRequest;
 import com.example.chatservice.dto.request.SendTextMessageRequest;
-import com.example.chatservice.dto.response.ApiResponse;
-import com.example.chatservice.dto.response.ConversationMemberListResponse;
-import com.example.chatservice.dto.response.MessageListResponse;
-import com.example.chatservice.dto.response.MessageResponse;
+import com.example.chatservice.dto.response.*;
 import com.example.chatservice.middleware.UserPrincipal;
 import com.example.chatservice.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -208,31 +205,34 @@ public class HandleMemberController {
     }
 
     @PostMapping("/{conversationId}/messages/file")
-    public ResponseEntity<ApiResponse<MessageResponse>> sendFileMessage(
+    public ResponseEntity<ApiResponse<PresignedFileResponse>> generateFileUrl(
             @PathVariable String conversationId,
-            @RequestBody SendFileMessageRequest request,
+            @RequestParam String fileName,
+            @RequestParam String contentType,
+            @RequestParam long fileSize,
             HttpServletRequest servletRequest,
             Authentication authentication
     ) {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        MessageResponse data = messageService.sendFileMessage(
-                conversationId,
-                userPrincipal.getUserId(),
-                userPrincipal.getFullName(),
-                userPrincipal.getAvatar(),
-                request
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<MessageResponse>builder()
+        Long userId = userPrincipal.getUserId();
+        PresignedFileResponse presignedResponse =
+                messageService.generateFileUploadUrl(
+                        conversationId,
+                        userId,
+                        fileName,
+                        contentType,
+                        fileSize
+                );
+        ApiResponse<PresignedFileResponse> response =
+                ApiResponse.<PresignedFileResponse>builder()
                         .success(true)
-                        .status(HttpStatus.CREATED.value())
-                        .message("Gửi file thành công")
-                        .data(data)
+                        .status(HttpStatus.OK.value())
+                        .message("Generate presigned url thành công")
+                        .data(presignedResponse)
                         .path(servletRequest.getRequestURI())
                         .timestamp(Instant.now())
-                        .build()
-        );
+                        .build();
+
+        return ResponseEntity.ok(response);
     }
 }
