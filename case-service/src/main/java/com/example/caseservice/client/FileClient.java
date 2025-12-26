@@ -1,8 +1,6 @@
 package com.example.caseservice.client;
 
-import com.example.fileservice.grpc.FileServiceGrpc;
-import com.example.fileservice.grpc.GenerateUploadUrlRequest;
-import com.example.fileservice.grpc.PresignedUrlResponse;
+import com.example.fileservice.grpc.*;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,7 +11,7 @@ public class FileClient {
     @GrpcClient("file-service")
     private FileServiceGrpc.FileServiceBlockingStub fileServiceStub;
 
-    public String getPresignedUploadUrl(MultipartFile file, Long userId) {
+    public PresignedUrlResponse getPresignedUploadUrl(MultipartFile file, Long userId) {
         GenerateUploadUrlRequest request = GenerateUploadUrlRequest.newBuilder()
                 .setFileName(file.getOriginalFilename())
                 .setContentType(file.getContentType())
@@ -22,12 +20,31 @@ public class FileClient {
                 .setBusinessType("CASE_DOCUMENT")
                 .build();
 
-        PresignedUrlResponse response = fileServiceStub.generateUploadUrl(request);
+        return fileServiceStub.generateUploadUrl(request);
+    }
 
+    public String getPresignedDownloadUrl(String fileId, String fileName) {
+        GenerateDownloadUrlRequest request = GenerateDownloadUrlRequest.newBuilder()
+                .setFileId(fileId)
+                .setFileName(fileName)
+                .build();
+
+        PresignedUrlResponse response = fileServiceStub.generateDownloadUrl(request);
         if (response.getSuccess()) {
             return response.getPresignedUrl();
-        } else {
-            throw new RuntimeException("Lỗi từ File Service: " + response.getErrorMessage());
         }
+        throw new RuntimeException("Lỗi lấy link download: " + response.getErrorMessage());
+    }
+
+    public String getPresignedPreviewUrl(String fileId) {
+        FileIdRequest request = FileIdRequest.newBuilder()
+                .setFileId(fileId)
+                .build();
+
+        PresignedUrlResponse response = fileServiceStub.generatePreviewUrl(request);
+        if (response.getSuccess()) {
+            return response.getPresignedUrl();
+        }
+        throw new RuntimeException("Lỗi lấy link preview: " + response.getErrorMessage());
     }
 }

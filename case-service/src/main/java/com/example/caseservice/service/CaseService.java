@@ -3,23 +3,23 @@ package com.example.caseservice.service;
 import com.example.caseservice.client.UserClient;
 import com.example.caseservice.client.FileClient;
 import com.example.caseservice.dto.*;
-import com.example.caseservice.entity.Case;
-import com.example.caseservice.entity.CaseStatus;
-import com.example.caseservice.entity.CaseDocument;
-import com.example.caseservice.entity.CaseProgressUpdate;
-import com.example.caseservice.repository.CaseRepository;
-import com.example.caseservice.repository.CaseDocumentRepository;
-import com.example.caseservice.repository.CaseProgressUpdateRepository;
+import com.example.caseservice.entity.*;
+import com.example.caseservice.exception.AppException;
+import com.example.caseservice.exception.ErrorType;
+import com.example.caseservice.repository.*;
+import com.example.fileservice.grpc.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +30,6 @@ public class CaseService {
     private final CaseProgressUpdateRepository progressRepository;
     private final CaseDocumentRepository documentRepository;
 
-    // 1. TẠO VỤ ÁN
     public CaseResponse createCase(CreateCaseRequest request, Long lawyerId) {
         Case legalCase = Case.builder()
                 .title(request.getTitle())
@@ -38,50 +37,135 @@ public class CaseService {
                 .clientId(request.getClientId())
                 .lawyerId(lawyerId)
                 .status(CaseStatus.IN_PROGRESS)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
-
-        Case savedCase = caseRepository.save(legalCase);
-        return mapToResponse(savedCase);
+        return mapToResponse(caseRepository.save(legalCase));
     }
 
-    // 2. LẤY CHI TIẾT
     public CaseResponse getCaseById(Long id) {
         Case c = caseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vụ án"));
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
         return mapToResponse(c);
     }
 
-    // 3. TÌM KIẾM VÀ PHÂN TRANG
-    public Page<CaseResponse> searchMyCases(Long userId, String keyword, Pageable pageable) {
-        Page<Case> casesPage = caseRepository.searchMyCases(userId, keyword, pageable);
-        return casesPage.map(this::mapToResponse);
+    public Page<CaseResponse> searchMyCases(Long userId, String role, String keyword, Pageable pageable) {
+        Page<Case> casesPage;
+        boolean isLawyer = "LAWYER".equalsIgnoreCase(role);
+        String searchKeyword = (keyword == null) ? "" : keyword.trim();
+
+        if (isLawyer) {
+            casesPage = caseRepository.searchCasesForLawyer(userId, searchKeyword, pageable);
+        } else {
+            casesPage = caseRepository.searchCasesForClient(userId, searchKeyword, pageable);
+        }
+
+        if (casesPage.isEmpty()) return Page.empty();
+
+        Set<Long> userIds = casesPage.getContent().stream()
+                .flatMap(c -> Stream.of(c.getLawyerId(), c.getClientId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> userNameMap = new HashMap<>();
+        try {
+            var userRes = userClient.getUsersByIds(new ArrayList<>(userIds));
+            if (userRes != null && userRes.getResult() != null) {
+                userRes.getResult().forEach(u -> userNameMap.put(u.getId(), u.getFullName()));
+            }
+        } catch (Exception e) {}
+
+        List<CaseResponse> responses = casesPage.getContent().stream()
+                .map(c -> mapToResponseWithNames(c, userNameMap))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, casesPage.getTotalElements());
     }
 
-    // 4. CẬP NHẬT TIẾN ĐỘ & TRẠNG THÁI
+    @Transactional
+    public String uploadCaseDocument(Long caseId, Long userId, MultipartFile file) {
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
+
+        if (!c.getLawyerId().equals(userId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư phụ trách mới được thêm tài liệu");
+        }
+
+        PresignedUrlResponse response = fileClient.getPresignedUploadUrl(file, userId);
+        if (!response.getSuccess()) {
+            throw new AppException(ErrorType.INTERNAL_ERROR, "Lỗi File Service: " + response.getErrorMessage());
+        }
+
+        CaseDocument doc = CaseDocument.builder()
+                .legalCase(c)
+                .fileName(file.getOriginalFilename())
+                .filePath(response.getFileId())
+                .fileType(file.getContentType())
+                .uploadedAt(LocalDateTime.now())
+                .build();
+
+        documentRepository.save(doc);
+        return response.getPresignedUrl();
+    }
+
+    public String getDownloadUrl(Long caseId, Long docId, Long userId) {
+        CaseDocument doc = validateAndGetDocument(caseId, docId, userId);
+        return fileClient.getPresignedDownloadUrl(doc.getFilePath(), doc.getFileName());
+    }
+
+    public String getViewUrl(Long caseId, Long docId, Long userId) {
+        CaseDocument doc = validateAndGetDocument(caseId, docId, userId);
+        return fileClient.getPresignedPreviewUrl(doc.getFilePath());
+    }
+
+    private CaseDocument validateAndGetDocument(Long caseId, Long docId, Long userId) {
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
+
+        if (!c.getLawyerId().equals(userId) && !c.getClientId().equals(userId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền truy cập tài liệu này");
+        }
+
+        return documentRepository.findById(docId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Tài liệu không tồn tại"));
+    }
+
+    @Transactional
+    public void deleteDocument(Long caseId, Long docId, Long userId) {
+        CaseDocument doc = validateAndGetDocument(caseId, docId, userId);
+        if (!doc.getLegalCase().getLawyerId().equals(userId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư phụ trách mới được xóa tài liệu");
+        }
+        documentRepository.delete(doc);
+    }
+
+    @Transactional
+    public void deleteCase(Long caseId, Long userId) {
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
+
+        if (!c.getLawyerId().equals(userId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền xóa vụ án này");
+        }
+        caseRepository.delete(c);
+    }
+
     @Transactional
     public CaseUpdateResponse updateProgress(Long caseId, UpdateProgressRequest request, Long lawyerId) {
-        Case legalCase = caseRepository.findById(caseId)
-                .orElseThrow(() -> new RuntimeException("Case not found"));
+        Case c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Case not found"));
 
-        if (!legalCase.getLawyerId().equals(lawyerId)) {
-            throw new RuntimeException("Bạn không có quyền cập nhật vụ án này");
+        if (!c.getLawyerId().equals(lawyerId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền cập nhật vụ án này");
         }
 
         CaseProgressUpdate update = CaseProgressUpdate.builder()
-                .legalCase(legalCase)
+                .legalCase(c)
                 .updateDescription(request.getDescription())
                 .updateDate(LocalDateTime.now())
                 .build();
 
         progressRepository.save(update);
-
-        if (request.getStatus() != null) {
-            legalCase.setStatus(request.getStatus());
-        }
-        legalCase.setUpdatedAt(LocalDateTime.now());
-        caseRepository.save(legalCase);
+        if (request.getStatus() != null) c.setStatus(request.getStatus());
+        caseRepository.save(c);
 
         return CaseUpdateResponse.builder()
                 .id(update.getId())
@@ -90,79 +174,14 @@ public class CaseService {
                 .build();
     }
 
-    // 5. LẤY UPLOAD URL QUA gRPC
-    @Transactional
-    public String uploadCaseDocument(Long caseId, Long userId, MultipartFile file) {
-        Case legalCase = caseRepository.findById(caseId)
-                .orElseThrow(() -> new RuntimeException("Vụ án không tồn tại"));
-
-        if (!legalCase.getLawyerId().equals(userId)) {
-            throw new RuntimeException("Chỉ luật sư phụ trách mới được thêm tài liệu");
-        }
-
-        try {
-            // Gọi gRPC lấy Presigned URL
-            String uploadUrl = fileClient.getPresignedUploadUrl(file, userId);
-
-            CaseDocument doc = CaseDocument.builder()
-                    .legalCase(legalCase)
-                    .fileName(file.getOriginalFilename())
-                    .filePath(uploadUrl)
-                    .fileType(file.getContentType())
-                    .uploadedAt(LocalDateTime.now())
-                    .build();
-
-            documentRepository.save(doc);
-            return uploadUrl;
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi upload: " + e.getMessage());
-        }
+    private CaseResponse mapToResponseWithNames(Case c, Map<Long, String> nameMap) {
+        CaseResponse res = mapToResponse(c);
+        res.setLawyerName(nameMap.getOrDefault(c.getLawyerId(), "Unknown"));
+        res.setClientName(nameMap.getOrDefault(c.getClientId(), "Unknown"));
+        return res;
     }
 
-    // 6. XÓA TÀI LIỆU (Hàm bị thiếu gây lỗi symbol)
-    @Transactional
-    public void deleteDocument(Long caseId, Long docId, Long userId) {
-        Case legalCase = caseRepository.findById(caseId)
-                .orElseThrow(() -> new RuntimeException("Vụ án không tồn tại"));
-
-        if (!legalCase.getLawyerId().equals(userId)) {
-            throw new RuntimeException("Bạn không có quyền xóa tài liệu này");
-        }
-
-        CaseDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new RuntimeException("Tài liệu không tồn tại"));
-
-        documentRepository.delete(doc);
-    }
-
-    // 7. XÓA VỤ ÁN
-    @Transactional
-    public void deleteCase(Long caseId, Long userId) {
-        Case legalCase = caseRepository.findById(caseId)
-                .orElseThrow(() -> new RuntimeException("Vụ án không tồn tại"));
-
-        if (!legalCase.getLawyerId().equals(userId)) {
-            throw new RuntimeException("Bạn không có quyền xóa vụ án này");
-        }
-
-        caseRepository.delete(legalCase);
-    }
-
-    // MAPPING DTO
     private CaseResponse mapToResponse(Case c) {
-        String lawyerName = "Unknown";
-        String clientName = "Unknown";
-
-        try {
-            var lawyerRes = userClient.getUserById(c.getLawyerId());
-            if (lawyerRes != null && lawyerRes.getResult() != null)
-                lawyerName = lawyerRes.getResult().getFullName();
-
-            var clientRes = userClient.getUserById(c.getClientId());
-            if (clientRes != null && clientRes.getResult() != null)
-                clientName = clientRes.getResult().getFullName();
-        } catch (Exception e) {}
-
         List<CaseUpdateResponse> updates = (c.getProgressUpdates() == null) ? List.of() :
                 c.getProgressUpdates().stream()
                         .map(u -> CaseUpdateResponse.builder()
@@ -189,8 +208,6 @@ public class CaseService {
                 .status(c.getStatus())
                 .lawyerId(c.getLawyerId())
                 .clientId(c.getClientId())
-                .lawyerName(lawyerName)
-                .clientName(clientName)
                 .createdAt(c.getCreatedAt())
                 .progressUpdates(updates)
                 .documents(docs)

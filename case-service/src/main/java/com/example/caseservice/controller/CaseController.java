@@ -16,32 +16,35 @@ import org.springframework.web.multipart.MultipartFile;
 public class CaseController {
     private final CaseService caseService;
 
-    // TẠO MỚI
     @PostMapping
-    public ApiResponse<CaseResponse> createCase(@RequestBody CreateCaseRequest request,
-                                                @RequestHeader("X-User-Id") Long lawyerId) {
+    public ApiResponse<CaseResponse> createCase(
+            @RequestBody CreateCaseRequest request,
+            @RequestHeader("X-User-Id") Long lawyerId,
+            @RequestHeader("X-User-Role") String role) {
+        if (!"LAWYER".equalsIgnoreCase(role)) {
+            throw new RuntimeException("Chỉ luật sư mới có quyền tạo vụ án");
+        }
         return ApiResponse.<CaseResponse>builder()
                 .code(200)
                 .result(caseService.createCase(request, lawyerId))
                 .build();
     }
 
-    // DANH SÁCH + TÌM KIẾM + PHÂN TRANG
     @GetMapping
     public ApiResponse<Page<CaseResponse>> getMyCases(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-User-Role") String role) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ApiResponse.<Page<CaseResponse>>builder()
                 .code(200)
-                .result(caseService.searchMyCases(userId, keyword, pageable))
+                .result(caseService.searchMyCases(userId, role, keyword, pageable))
                 .build();
     }
 
-    // CHI TIẾT
     @GetMapping("/{id}")
     public ApiResponse<CaseResponse> getCaseById(@PathVariable Long id) {
         return ApiResponse.<CaseResponse>builder()
@@ -50,19 +53,28 @@ public class CaseController {
                 .build();
     }
 
-    // TIẾN ĐỘ
-    @PostMapping("/{caseId}/progress")
-    public ApiResponse<CaseUpdateResponse> updateProgress(
-            @PathVariable Long caseId,
-            @RequestBody UpdateProgressRequest request,
-            @RequestHeader("X-User-Id") Long lawyerId) {
-        return ApiResponse.<CaseUpdateResponse>builder()
+    @GetMapping("/{id}/documents/{docId}/download")
+    public ApiResponse<String> getDownloadUrl(
+            @PathVariable Long id,
+            @PathVariable Long docId,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ApiResponse.<String>builder()
                 .code(200)
-                .result(caseService.updateProgress(caseId, request, lawyerId))
+                .result(caseService.getDownloadUrl(id, docId, userId))
                 .build();
     }
 
-    // UPLOAD TÀI LIỆU
+    @GetMapping("/{id}/documents/{docId}/view")
+    public ApiResponse<String> getViewUrl(
+            @PathVariable Long id,
+            @PathVariable Long docId,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ApiResponse.<String>builder()
+                .code(200)
+                .result(caseService.getViewUrl(id, docId, userId))
+                .build();
+    }
+
     @PostMapping("/{id}/documents")
     public ApiResponse<String> uploadDocument(
             @PathVariable Long id,
@@ -74,7 +86,6 @@ public class CaseController {
                 .build();
     }
 
-    // XÓA TÀI LIỆU (Dòng 83 bạn báo lỗi nằm ở đây)
     @DeleteMapping("/{id}/documents/{docId}")
     public ApiResponse<Void> deleteDocument(
             @PathVariable Long id,
@@ -87,7 +98,17 @@ public class CaseController {
                 .build();
     }
 
-    // XÓA VỤ ÁN
+    @PostMapping("/{caseId}/progress")
+    public ApiResponse<CaseUpdateResponse> updateProgress(
+            @PathVariable Long caseId,
+            @RequestBody UpdateProgressRequest request,
+            @RequestHeader("X-User-Id") Long lawyerId) {
+        return ApiResponse.<CaseUpdateResponse>builder()
+                .code(200)
+                .result(caseService.updateProgress(caseId, request, lawyerId))
+                .build();
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteCase(
             @PathVariable Long id,
