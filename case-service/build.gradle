@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.2'
     id 'io.spring.dependency-management' version '1.1.4'
+    // 1. Thêm plugin Protobuf
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 group = 'com.example'
@@ -16,25 +18,54 @@ repositories {
 }
 
 dependencies {
-    // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // Cloud & Discovery
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
-    // Database & Utils
+    // 2. Thêm thư viện gRPC Client cho Spring Boot
+    implementation 'net.devh:grpc-client-spring-boot-starter:2.15.0.RELEASE'
+    implementation 'io.grpc:grpc-netty-shaded:1.61.0'
+    implementation 'io.grpc:grpc-protobuf:1.61.0'
+    implementation 'io.grpc:grpc-stub:1.61.0'
+    compileOnly 'jakarta.annotation:jakarta.annotation-api:1.3.5'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
-
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.0"
+    }
+}
+
+// 3. Cấu hình task để tự động tạo code từ file .proto
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.61.0"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+// Đảm bảo thư mục code sinh ra được IDE nhận diện
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/grpc'
+            srcDirs 'build/generated/source/proto/main/java'
+        }
     }
 }

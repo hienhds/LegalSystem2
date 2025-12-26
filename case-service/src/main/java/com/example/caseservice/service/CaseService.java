@@ -53,13 +53,13 @@ public class CaseService {
         return mapToResponse(c);
     }
 
-    // 3. TÌM KIẾM VÀ PHÂN TRANG (MỚI)
+    // 3. TÌM KIẾM VÀ PHÂN TRANG
     public Page<CaseResponse> searchMyCases(Long userId, String keyword, Pageable pageable) {
         Page<Case> casesPage = caseRepository.searchMyCases(userId, keyword, pageable);
         return casesPage.map(this::mapToResponse);
     }
 
-    // 4. CẬP NHẬT TIẾN ĐỘ
+    // 4. CẬP NHẬT TIẾN ĐỘ & TRẠNG THÁI
     @Transactional
     public CaseUpdateResponse updateProgress(Long caseId, UpdateProgressRequest request, Long lawyerId) {
         Case legalCase = caseRepository.findById(caseId)
@@ -90,7 +90,7 @@ public class CaseService {
                 .build();
     }
 
-    // 5. UPLOAD TÀI LIỆU
+    // 5. LẤY UPLOAD URL QUA gRPC
     @Transactional
     public String uploadCaseDocument(Long caseId, Long userId, MultipartFile file) {
         Case legalCase = caseRepository.findById(caseId)
@@ -101,30 +101,32 @@ public class CaseService {
         }
 
         try {
-            String fileUrl = fileClient.uploadFile(file);
+            // Gọi gRPC lấy Presigned URL
+            String uploadUrl = fileClient.getPresignedUploadUrl(file, userId);
+
             CaseDocument doc = CaseDocument.builder()
                     .legalCase(legalCase)
                     .fileName(file.getOriginalFilename())
-                    .filePath(fileUrl)
+                    .filePath(uploadUrl)
                     .fileType(file.getContentType())
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
             documentRepository.save(doc);
-            return fileUrl;
+            return uploadUrl;
         } catch (Exception e) {
             throw new RuntimeException("Lỗi upload: " + e.getMessage());
         }
     }
 
-    // 6. XÓA TÀI LIỆU (MỚI)
+    // 6. XÓA TÀI LIỆU (Hàm bị thiếu gây lỗi symbol)
     @Transactional
     public void deleteDocument(Long caseId, Long docId, Long userId) {
         Case legalCase = caseRepository.findById(caseId)
                 .orElseThrow(() -> new RuntimeException("Vụ án không tồn tại"));
 
         if (!legalCase.getLawyerId().equals(userId)) {
-            throw new RuntimeException("Bạn không có quyền xóa tài liệu của vụ án này");
+            throw new RuntimeException("Bạn không có quyền xóa tài liệu này");
         }
 
         CaseDocument doc = documentRepository.findById(docId)
@@ -133,7 +135,7 @@ public class CaseService {
         documentRepository.delete(doc);
     }
 
-    // 7. XÓA VỤ ÁN (MỚI)
+    // 7. XÓA VỤ ÁN
     @Transactional
     public void deleteCase(Long caseId, Long userId) {
         Case legalCase = caseRepository.findById(caseId)
@@ -143,21 +145,22 @@ public class CaseService {
             throw new RuntimeException("Bạn không có quyền xóa vụ án này");
         }
 
-        // CascadeType.ALL trong Entity sẽ tự động xóa Documents và ProgressUpdates
         caseRepository.delete(legalCase);
     }
 
-    // MAPPING
+    // MAPPING DTO
     private CaseResponse mapToResponse(Case c) {
         String lawyerName = "Unknown";
         String clientName = "Unknown";
 
         try {
             var lawyerRes = userClient.getUserById(c.getLawyerId());
-            if (lawyerRes != null && lawyerRes.getResult() != null) lawyerName = lawyerRes.getResult().getFullName();
+            if (lawyerRes != null && lawyerRes.getResult() != null)
+                lawyerName = lawyerRes.getResult().getFullName();
 
             var clientRes = userClient.getUserById(c.getClientId());
-            if (clientRes != null && clientRes.getResult() != null) clientName = clientRes.getResult().getFullName();
+            if (clientRes != null && clientRes.getResult() != null)
+                clientName = clientRes.getResult().getFullName();
         } catch (Exception e) {}
 
         List<CaseUpdateResponse> updates = (c.getProgressUpdates() == null) ? List.of() :

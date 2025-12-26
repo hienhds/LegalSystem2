@@ -1,33 +1,33 @@
 package com.example.caseservice.client;
 
 import com.example.fileservice.grpc.FileServiceGrpc;
-import com.example.fileservice.grpc.UploadFileRequest;
-import com.example.fileservice.grpc.UploadFileResponse;
-import com.google.protobuf.ByteString;
+import com.example.fileservice.grpc.GenerateUploadUrlRequest;
+import com.example.fileservice.grpc.PresignedUrlResponse;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-
 @Service
 public class FileClient {
 
-    @GrpcClient("file-service") // Tên service cấu hình trong application.properties
+    @GrpcClient("file-service")
     private FileServiceGrpc.FileServiceBlockingStub fileServiceStub;
 
-    public String uploadFile(MultipartFile file) throws IOException {
-        // Chuyển MultipartFile sang định dạng gRPC bytes
-        UploadFileRequest request = UploadFileRequest.newBuilder()
-                .setContent(ByteString.copyFrom(file.getBytes()))
+    public String getPresignedUploadUrl(MultipartFile file, Long userId) {
+        GenerateUploadUrlRequest request = GenerateUploadUrlRequest.newBuilder()
                 .setFileName(file.getOriginalFilename())
-                .setFileType(file.getContentType())
+                .setContentType(file.getContentType())
+                .setFileSize(file.getSize())
+                .setUploadedBy(userId.toString())
+                .setBusinessType("CASE_DOCUMENT")
                 .build();
 
-        // Gọi sang file-service
-        UploadFileResponse response = fileServiceStub.uploadFile(request);
+        PresignedUrlResponse response = fileServiceStub.generateUploadUrl(request);
 
-        // Trả về URL hoặc Path của file đã upload
-        return response.getFileUrl();
+        if (response.getSuccess()) {
+            return response.getPresignedUrl();
+        } else {
+            throw new RuntimeException("Lỗi từ File Service: " + response.getErrorMessage());
+        }
     }
 }

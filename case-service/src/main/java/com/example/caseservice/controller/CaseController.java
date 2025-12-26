@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CaseController {
     private final CaseService caseService;
 
-    // TẠO VỤ ÁN
+    // TẠO MỚI
     @PostMapping
     public ApiResponse<CaseResponse> createCase(@RequestBody CreateCaseRequest request,
                                                 @RequestHeader("X-User-Id") Long lawyerId) {
@@ -26,7 +26,7 @@ public class CaseController {
                 .build();
     }
 
-    // DANH SÁCH + TÌM KIẾM + PHÂN TRANG (CẬP NHẬT)
+    // DANH SÁCH + TÌM KIẾM + PHÂN TRANG
     @GetMapping
     public ApiResponse<Page<CaseResponse>> getMyCases(
             @RequestParam(defaultValue = "0") int page,
@@ -50,7 +50,7 @@ public class CaseController {
                 .build();
     }
 
-    // CẬP NHẬT TIẾN ĐỘ
+    // TIẾN ĐỘ
     @PostMapping("/{caseId}/progress")
     public ApiResponse<CaseUpdateResponse> updateProgress(
             @PathVariable Long caseId,
@@ -74,7 +74,7 @@ public class CaseController {
                 .build();
     }
 
-    // XÓA TÀI LIỆU (MỚI)
+    // XÓA TÀI LIỆU (Dòng 83 bạn báo lỗi nằm ở đây)
     @DeleteMapping("/{id}/documents/{docId}")
     public ApiResponse<Void> deleteDocument(
             @PathVariable Long id,
@@ -87,7 +87,7 @@ public class CaseController {
                 .build();
     }
 
-    // XÓA VỤ ÁN (MỚI)
+    // XÓA VỤ ÁN
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteCase(
             @PathVariable Long id,
