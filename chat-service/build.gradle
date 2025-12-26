@@ -51,6 +51,9 @@ dependencyManagement {
 ========================= */
 dependencies {
 
+	/* ===== DevTools for auto-reload ===== */
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
 	/* ===== Spring Boot ===== */
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'

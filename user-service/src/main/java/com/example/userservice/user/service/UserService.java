@@ -42,6 +42,14 @@ public class UserService {
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
         }
+        
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
 
         userRepository.save(user);
 

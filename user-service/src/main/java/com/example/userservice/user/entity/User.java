@@ -105,5 +105,13 @@ public class User implements Serializable {
     public User(){
 
     }
+    
+    // Helper method for admin management
+    public String getRoleName() {
+        if (userRoles == null || userRoles.isEmpty()) {
+            return "USER";
+        }
+        return userRoles.get(0).getRole().getRoleName();
+    }
 
 }

@@ -8,6 +8,8 @@ import com.example.userservice.lawyer.dto.request.LawyerRequest;
 import com.example.userservice.lawyer.dto.response.LawyerDetailResponse;
 import com.example.userservice.lawyer.dto.response.LawyerListResponse;
 import com.example.userservice.lawyer.dto.response.LawyerResponse;
+import com.example.userservice.lawyer.dto.response.LawyerReviewResponse;
+import com.example.userservice.lawyer.dto.response.LawyerStatsResponse;
 import com.example.userservice.lawyer.entity.*;
 import com.example.userservice.lawyer.repository.BarAssociationRepository;
 import com.example.userservice.lawyer.repository.LawyerRepository;
@@ -261,6 +263,103 @@ public class LawyerService {
         }
 
         return "Updated lawyerId=" + lawyerId + " to status=" + newStatus;
+    }
+    
+    // Thêm các method bị thiếu
+    public LawyerListResponse getLawyerById(Long id) {
+        Lawyer lawyer = lawyerRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Luật sư không tồn tại"));
+        
+        return mapToLawyerListResponse(lawyer);
+    }
+    
+    public LawyerDetailResponse getLawyerDetails(Long id) {
+        return getDetail(id);
+    }
+    
+    public Page<LawyerListResponse> getAllLawyers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Lawyer> lawyers = lawyerRepository.findAll(pageable);
+        return lawyers.map(this::mapToLawyerListResponse);
+    }
+    
+    public LawyerStatsResponse getStats() {
+        long totalLawyers = lawyerRepository.count();
+        long totalApproved = lawyerRepository.countByVerificationStatus(VerificationStatus.APPROVED);
+        long totalPending = lawyerRepository.countByVerificationStatus(VerificationStatus.PENDING);
+        
+        return LawyerStatsResponse.builder()
+                .totalLawyers(totalLawyers)
+                .activeLawyers(totalApproved)
+                .verifiedLawyers(totalApproved)
+                .averageRating(0.0)
+                .totalReviews(0L)
+                .satisfactionRate(0.0)
+                .totalAppointments(0L)
+                .completedAppointments(0L)
+                .build();
+    }
+    
+    public Page<com.example.userservice.lawyer.dto.response.LawyerReviewResponse> getLawyerReviews(Long lawyerId, int page, int size) {
+        // This requires AppointmentRepository which is in appointment package
+        // For now, return empty page
+        return Page.empty();
+    }
+    
+    public LawyerDetailResponse updateLawyerProfile(Long userId, com.example.userservice.lawyer.dto.request.UpdateLawyerProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "User not found"));
+        
+        Lawyer lawyer = user.getLawyer();
+        if (lawyer == null) {
+            throw new AppException(ErrorType.NOT_FOUND, "Bạn chưa đăng ký là luật sư");
+        }
+        
+        // Update lawyer profile
+        if (request.getBio() != null) {
+            lawyer.setBio(request.getBio());
+        }
+        if (request.getOfficeAddress() != null) {
+            lawyer.setOfficeAddress(request.getOfficeAddress());
+        }
+        if (request.getYearsOfExp() != null) {
+            lawyer.setYearsOfExp(request.getYearsOfExp());
+        }
+        
+        lawyerRepository.save(lawyer);
+        
+        return getDetail(lawyer.getLawyerId());
+    }
+    
+    public void deleteLawyer(Long lawyerId) {
+        Lawyer lawyer = lawyerRepository.findById(lawyerId)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Luật sư không tồn tại"));
+        
+        // Remove LAWYER role from user
+        User user = lawyer.getUser();
+        Role lawyerRole = roleRepository.findByRoleName("LAWYER")
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Role LAWYER not found"));
+        
+        // Delete user role manually
+        user.getUserRoles().removeIf(ur -> ur.getRole().equals(lawyerRole));
+        userRepository.save(user);
+        
+        // Delete lawyer record
+        lawyerRepository.delete(lawyer);
+    }
+    
+    private LawyerListResponse mapToLawyerListResponse(Lawyer lawyer) {
+        return LawyerListResponse.builder()
+                .lawyerId(lawyer.getLawyerId())
+                .fullName(lawyer.getUser().getFullName())
+                .email(lawyer.getUser().getEmail())
+                .phoneNumber(lawyer.getUser().getPhoneNumber())
+                .avatarUrl(lawyer.getUser().getAvatarUrl())
+                .barAssociationName(lawyer.getBarAssociation().getAssociationName())
+                .barLicenseId(lawyer.getBarLicenseId())
+                .certificateUrl(lawyer.getCertificateImageUrl())
+                .verificationStatus(lawyer.getVerificationStatus())
+                .build();
     }
 
 }

@@ -16,6 +16,17 @@ public class CustomUserDetails implements UserDetails {
     public CustomUserDetails(User user){
         this.user = user;
     }
+    
+    /**
+     * Get lawyer ID if user is a lawyer
+     * @return lawyer ID or null if user is not a lawyer
+     */
+    public Long getLawyerId() {
+        if (user.isLawyer() && user.getLawyer() != null) {
+            return user.getLawyer().getLawyerId();
+        }
+        return null;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -35,6 +35,9 @@ dependencyManagement {
 }
 
 dependencies {
+    // DevTools for auto-reload during development
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'

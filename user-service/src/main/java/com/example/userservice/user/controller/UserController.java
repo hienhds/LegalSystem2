@@ -55,6 +55,26 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserProfile(
+            HttpServletRequest httpRequest,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        Long userId = user.getUser().getUserId();
+        UserResponse profileData = userService.getUserById(userId);
+
+        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin hồ sơ thành công")
+                .data(profileData)
+                .timestamp(Instant.now())
+                .path(httpRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @RequestBody UserProfileUpdateRequest request,

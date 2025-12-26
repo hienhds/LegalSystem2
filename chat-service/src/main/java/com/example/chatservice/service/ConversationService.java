@@ -71,10 +71,10 @@ public class ConversationService {
         // ===== GROUP VALIDATION =====
         if (conversationRequest.getType() == Conversation.ConversationType.GROUP) {
             if (conversationRequest.getParticipantIds() == null
-                    || conversationRequest.getParticipantIds().size() < 2) {
+                    || conversationRequest.getParticipantIds().size() < 1) {
                 throw new AppException(
                         ErrorType.BAD_REQUEST,
-                        "Nhóm phải có ít nhất 3 người"
+                        "Nhóm phải có ít nhất 2 người"
                 );
             }
         }

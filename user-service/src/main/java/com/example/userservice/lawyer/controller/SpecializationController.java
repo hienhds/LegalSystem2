@@ -1,7 +1,7 @@
 package com.example.userservice.lawyer.controller;
 
 import com.example.userservice.common.dto.ApiResponse;
-import com.example.userservice.lawyer.entity.Specialization;
+import com.example.userservice.lawyer.dto.response.SpecializationResponse;
 import com.example.userservice.lawyer.service.SpecializationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -15,21 +15,21 @@ import java.time.Instant;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/specialization")
+@RequestMapping("/api/specializations")
 @RequiredArgsConstructor
 public class SpecializationController {
 
     private final SpecializationService specializationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Specialization>>> getAll(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<List<SpecializationResponse>>> getAll(HttpServletRequest request) {
 
-        List<Specialization> specializationList = specializationService.getAll();
+        List<SpecializationResponse> specializationList = specializationService.getAll();
 
-        ApiResponse<List<Specialization>> response = ApiResponse.<List<Specialization>>builder()
+        ApiResponse<List<SpecializationResponse>> response = ApiResponse.<List<SpecializationResponse>>builder()
                 .success(true)
                 .status(HttpStatus.OK.value())
-                .message("Thành công")
+                .message("Lấy danh sách chuyên môn thành công")
                 .data(specializationList)
                 .path(request.getRequestURI())
                 .timestamp(Instant.now())

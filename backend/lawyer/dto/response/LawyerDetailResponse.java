@@ -1,0 +1,35 @@
+package com.example.backend.lawyer.dto.response;
+
+import com.example.backend.lawyer.entity.VerificationStatus;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
+public class LawyerDetailResponse {
+    private Long lawyerId;
+    private String fullName;
+    private String email;
+    private String phoneNumber;
+    private String avatarUrl;
+    private String role;
+
+    private String barLicenseId;
+    private String bio;
+    private String certificateImageUrl;
+    private String officeAddress;
+    private int yearsOfExp;
+
+    private String barAssociationName;
+    private VerificationStatus verificationStatus;
+
+    private List<String> specializationNames;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
