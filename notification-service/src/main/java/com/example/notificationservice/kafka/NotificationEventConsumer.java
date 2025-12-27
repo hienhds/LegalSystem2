@@ -4,12 +4,15 @@ import com.example.notificationservice.entity.Notification;
 import com.example.notificationservice.event.*;
 import com.example.notificationservice.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationEventConsumer {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -19,11 +22,12 @@ public class NotificationEventConsumer {
             topics = "notification-created",
             containerFactory = "notificationKafkaListenerFactory"
     )
-    public void handleNotificationCreated(NotificationEvent event) {
+    public void handleNotificationCreated(NotificationEvent event, Acknowledgment ack) {
         messagingTemplate.convertAndSend(
                 "/user/" + event.getUserId() + "/queue/notification",
                 event
         );
+        ack.acknowledge();
     }
 
     @KafkaListener(
@@ -41,7 +45,7 @@ public class NotificationEventConsumer {
             topics = "conversation-created",
             containerFactory = "notificationKafkaListenerFactory"
     )
-    public void handleConversationCreated(ConversationCreatedEvent event) {
+    public void handleConversationCreated(ConversationCreatedEvent event, Acknowledgment ack) {
         notificationService.notifyUser(
                 event.getCreatorId(),
                 "Tạo phòng thành công",
@@ -49,6 +53,8 @@ public class NotificationEventConsumer {
                         + ". Vào lúc " + event.getCreatedAt(),
                 Notification.NotificationType.CONVERSATION_CREATED
         );
+        // Xác nhận đã xử lý xong
+        ack.acknowledge();
     }
 
     @KafkaListener(
