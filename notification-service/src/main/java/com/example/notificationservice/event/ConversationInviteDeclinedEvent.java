@@ -15,7 +15,8 @@ public class ConversationInviteDeclinedEvent {
     private String inviteId;
     private String conversationName;
     private Long userId;
-    private String userFullName;
     private Long ownerId;
+    private String userFullName;
+    private String userAvatar;
     private LocalDateTime declineAt;
 }

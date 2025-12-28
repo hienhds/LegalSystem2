@@ -82,7 +82,7 @@ public class ConversationInviteService {
                 .receiverId(userSummary.getId())
                 .receiverName(userSummary.getFullName())
                 .receiverAvatar(userSummary.getAvatar())
-                .type(conversation.getType())
+                .type(conversation.getType()+"")
                 .note(conversation.getNote())
                 .build();
 

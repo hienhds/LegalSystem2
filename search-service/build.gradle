@@ -1,0 +1,85 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'search-service'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencyManagement {
+	imports {
+		// Spring Cloud compatible với Spring Boot 3.4.x
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:2024.0.0"
+	}
+}
+
+dependencies {
+
+	/* ================= CORE ================= */
+
+	// REST API cho search
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// Health check, metrics
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// Validation request search
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
+	/* ================= SEARCH ENGINE ================= */
+
+	// Elasticsearch (core của search-service)
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+
+	/* ================= MESSAGING ================= */
+
+	// Nhận event sync data từ các service khác
+	implementation 'org.springframework.kafka:spring-kafka'
+
+
+	/* ================= SERVICE DISCOVERY ================= */
+
+	// Đăng ký service
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+
+	/* ================= CACHE (OPTIONAL) ================= */
+
+	// Cache kết quả search / autocomplete
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+
+	/* ================= UTILS ================= */
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+
+	/* ================= DEV ================= */
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+
+	/* ================= TEST ================= */
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

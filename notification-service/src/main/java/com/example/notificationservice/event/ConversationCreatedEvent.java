@@ -17,5 +17,7 @@ public class ConversationCreatedEvent {
     private String conversationName;
     private Set<Long> memberIds;
     private Long creatorId;
+    private String creatorName;
+    private String creatorAvatar;
     private LocalDateTime createdAt;
 }
