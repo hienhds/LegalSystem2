@@ -2,6 +2,8 @@ package com.example.caseservice.controller;
 
 import com.example.caseservice.dto.*;
 import com.example.caseservice.service.CaseService;
+import com.example.caseservice.exception.AppException;
+import com.example.caseservice.exception.ErrorType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,7 +24,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền tạo vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền tạo vụ án");
         }
         return ApiResponse.<CaseResponse>builder()
                 .code(200)
@@ -65,7 +67,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền chỉnh sửa thông tin vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền chỉnh sửa thông tin vụ án");
         }
         return ApiResponse.<CaseResponse>builder()
                 .code(200)
@@ -105,7 +107,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền tải lên tài liệu vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền tải lên tài liệu vụ án");
         }
         return ApiResponse.<String>builder()
                 .code(200)
@@ -121,7 +123,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền xóa tài liệu vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền xóa tài liệu vụ án");
         }
         caseService.deleteDocument(id, docId, currentUserId);
         return ApiResponse.<Void>builder()
@@ -137,7 +139,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền cập nhật tiến độ vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền cập nhật tiến độ vụ án");
         }
         return ApiResponse.<CaseUpdateResponse>builder()
                 .code(200)
@@ -152,7 +154,7 @@ public class CaseController {
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
         if (!"LAWYER".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Chỉ luật sư mới có quyền xóa vụ án");
+            throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền xóa vụ án");
         }
         caseService.deleteCase(id, currentUserId);
         return ApiResponse.<Void>builder()

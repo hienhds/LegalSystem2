@@ -43,8 +43,8 @@ public class CaseService {
         
         Case savedCase = caseRepository.save(legalCase);
         
+        // Xử lý tập trung: Lấy tên ngay khi tạo thành công
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(lawyerId, request.getClientId()));
-        
         return mapToResponseWithNames(savedCase, nameMap);
     }
 
@@ -52,12 +52,12 @@ public class CaseService {
         Case c = caseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
         
+        // Kiểm tra quyền sở hữu (Double Check)
         if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền xem thông tin vụ án này");
         }
 
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(c.getLawyerId(), c.getClientId()));
-        
         return mapToResponseWithNames(c, nameMap);
     }
 
@@ -66,7 +66,7 @@ public class CaseService {
         Case c = caseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
 
-        // Kiểm tra xem có đúng là luật sư phụ trách vụ án này không
+        // Kiểm tra quyền luật sư phụ trách (Double Check)
         if (!Objects.equals(c.getLawyerId(), lawyerId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền chỉnh sửa vụ án này");
         }
@@ -76,7 +76,6 @@ public class CaseService {
         c.setClientId(request.getClientId());
 
         Case updatedCase = caseRepository.save(c);
-
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(updatedCase.getLawyerId(), updatedCase.getClientId()));
 
         return mapToResponseWithNames(updatedCase, nameMap);
@@ -95,6 +94,7 @@ public class CaseService {
 
         if (casesPage.isEmpty()) return Page.empty();
 
+        // Thu thập tất cả ID người dùng cần lấy tên (Xử lý tập trung để gọi User-Service 1 lần)
         Set<Long> userIds = casesPage.getContent().stream()
                 .flatMap(c -> Stream.of(c.getLawyerId(), c.getClientId()))
                 .filter(Objects::nonNull)
@@ -107,20 +107,6 @@ public class CaseService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(responses, pageable, casesPage.getTotalElements());
-    }
-
-    private Map<Long, String> fetchUserNames(List<Long> userIds) {
-        Map<Long, String> nameMap = new HashMap<>();
-        try {
-            log.info("Calling User Service for IDs: {}", userIds);
-            var userRes = userClient.getUsersByIds(userIds);
-            if (userRes != null && userRes.getResult() != null) {
-                userRes.getResult().forEach(u -> nameMap.put(u.getId(), u.getFullName()));
-            }
-        } catch (Exception e) {
-            log.error("LỖI GỌI USER-SERVICE: {}", e.getMessage());
-        }
-        return nameMap;
     }
 
     @Transactional
@@ -156,16 +142,27 @@ public class CaseService {
         return fileClient.getPresignedPreviewUrl(doc.getFilePath());
     }
 
+    /**
+     * Hàm hỗ trợ kiểm tra tính hợp lệ và quyền truy cập tài liệu (Double Check)
+     */
     private CaseDocument validateAndGetDocument(Long caseId, Long docId, Long userId) {
         Case c = caseRepository.findById(caseId)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
 
+        // Kiểm tra quyền truy cập vụ án
         if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền truy cập tài liệu này");
         }
 
-        return documentRepository.findById(docId)
+        CaseDocument doc = documentRepository.findById(docId)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Tài liệu không tồn tại"));
+
+        // Double Check: Đảm bảo tài liệu thực sự thuộc về vụ án đang yêu cầu
+        if (!Objects.equals(doc.getLegalCase().getId(), caseId)) {
+            throw new AppException(ErrorType.NOT_FOUND, "Tài liệu không thuộc hồ sơ vụ án này");
+        }
+
+        return doc;
     }
 
     @Transactional
@@ -214,10 +211,26 @@ public class CaseService {
                 .build();
     }
 
+    private Map<Long, String> fetchUserNames(List<Long> userIds) {
+        Map<Long, String> nameMap = new HashMap<>();
+        if (userIds == null || userIds.isEmpty()) return nameMap;
+        
+        try {
+            log.info("Calling User Service for IDs: {}", userIds);
+            var userRes = userClient.getUsersByIds(userIds);
+            if (userRes != null && userRes.getResult() != null) {
+                userRes.getResult().forEach(u -> nameMap.put(u.getId(), u.getFullName()));
+            }
+        } catch (Exception e) {
+            log.error("LỖI GỌI USER-SERVICE: {}", e.getMessage());
+        }
+        return nameMap;
+    }
+
     private CaseResponse mapToResponseWithNames(Case c, Map<Long, String> nameMap) {
         CaseResponse res = mapToResponse(c);
-        res.setLawyerName(nameMap.getOrDefault(c.getLawyerId(), "Unknown"));
-        res.setClientName(nameMap.getOrDefault(c.getClientId(), "Unknown"));
+        res.setLawyerName(nameMap.getOrDefault(c.getLawyerId(), "Không xác định"));
+        res.setClientName(nameMap.getOrDefault(c.getClientId(), "Không xác định"));
         return res;
     }
 
