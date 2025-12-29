@@ -8,6 +8,7 @@ import com.example.caseservice.exception.AppException;
 import com.example.caseservice.exception.ErrorType;
 import com.example.caseservice.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j // Thêm annotation để dùng log
 public class CaseService {
     private final CaseRepository caseRepository;
     private final UserClient userClient;
@@ -29,6 +31,7 @@ public class CaseService {
     private final CaseProgressUpdateRepository progressRepository;
     private final CaseDocumentRepository documentRepository;
 
+    @Transactional
     public CaseResponse createCase(CreateCaseRequest request, Long lawyerId) {
         Case legalCase = Case.builder()
                 .title(request.getTitle())
@@ -37,13 +40,22 @@ public class CaseService {
                 .lawyerId(lawyerId)
                 .status(CaseStatus.IN_PROGRESS)
                 .build();
-        return mapToResponse(caseRepository.save(legalCase));
+        
+        Case savedCase = caseRepository.save(legalCase);
+        
+        // Lấy tên luật sư và khách hàng
+        Map<Long, String> nameMap = fetchUserNames(Arrays.asList(lawyerId, request.getClientId()));
+        
+        return mapToResponseWithNames(savedCase, nameMap);
     }
 
     public CaseResponse getCaseById(Long id) {
         Case c = caseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
-        return mapToResponse(c);
+        
+        Map<Long, String> nameMap = fetchUserNames(Arrays.asList(c.getLawyerId(), c.getClientId()));
+        
+        return mapToResponseWithNames(c, nameMap);
     }
 
     public Page<CaseResponse> searchMyCases(Long userId, String role, String keyword, Pageable pageable) {
@@ -64,19 +76,29 @@ public class CaseService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<Long, String> userNameMap = new HashMap<>();
-        try {
-            var userRes = userClient.getUsersByIds(new ArrayList<>(userIds));
-            if (userRes != null && userRes.getResult() != null) {
-                userRes.getResult().forEach(u -> userNameMap.put(u.getId(), u.getFullName()));
-            }
-        } catch (Exception e) {}
+        Map<Long, String> userNameMap = fetchUserNames(new ArrayList<>(userIds));
 
         List<CaseResponse> responses = casesPage.getContent().stream()
                 .map(c -> mapToResponseWithNames(c, userNameMap))
                 .collect(Collectors.toList());
 
         return new PageImpl<>(responses, pageable, casesPage.getTotalElements());
+    }
+
+    // Helper method: Đã thêm log lỗi
+    private Map<Long, String> fetchUserNames(List<Long> userIds) {
+        Map<Long, String> nameMap = new HashMap<>();
+        try {
+            log.info("Calling User Service for IDs: {}", userIds);
+            var userRes = userClient.getUsersByIds(userIds);
+            if (userRes != null && userRes.getResult() != null) {
+                userRes.getResult().forEach(u -> nameMap.put(u.getId(), u.getFullName()));
+            }
+        } catch (Exception e) {
+            log.error("LỖI GỌI USER-SERVICE: {}", e.getMessage());
+            e.printStackTrace(); // In ra stacktrace để xem lỗi kết nối hay lỗi dữ liệu
+        }
+        return nameMap;
     }
 
     @Transactional
@@ -88,7 +110,6 @@ public class CaseService {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư phụ trách mới được thêm tài liệu");
         }
 
-        // Gọi quy trình tự động: Xin link -> Tự Upload -> Tự Confirm status
         String fileId = fileClient.uploadFileDirectly(file, userId, caseId.toString());
 
         CaseDocument doc = CaseDocument.builder()
