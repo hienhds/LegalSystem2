@@ -13,12 +13,12 @@ import java.util.List;
 @FeignClient(
     name = "user-service", 
     url = "${user-service.url:http://user-service}",
-    configuration = FeignConfig.class // Thêm dòng này để dùng FeignConfig
+    configuration = FeignConfig.class
 )
 public interface UserClient {
     @GetMapping("/api/users/{id}")
     ApiResponse<UserResponse> getUserById(@PathVariable("id") Long id);
 
-    @GetMapping("/api/users/ids")
+    @GetMapping("/api/users/internal/ids")
     ApiResponse<List<UserResponse>> getUsersByIds(@RequestParam("ids") List<Long> ids);
 }

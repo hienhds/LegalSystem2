@@ -7,7 +7,6 @@ import com.example.caseservice.entity.*;
 import com.example.caseservice.exception.AppException;
 import com.example.caseservice.exception.ErrorType;
 import com.example.caseservice.repository.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -46,17 +45,13 @@ public class CaseService {
         Case savedCase = caseRepository.save(legalCase);
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(lawyerId, request.getClientId()));
         CaseResponse response = mapToResponseWithNames(savedCase, nameMap);
-
-        // Gửi event đồng bộ (đã fix lỗi serialize ở CaseProducer)
         syncToSearch(savedCase, nameMap, "CREATE");
-
         return response;
     }
 
     public Page<CaseResponse> searchMyCases(Long userId, String role, String keyword, Pageable pageable) {
         String kw = (keyword == null) ? "" : keyword.toLowerCase().trim();
         
-        // 1. Nếu không có keyword, lấy từ DB và gắn tên người dùng
         if (kw.isEmpty()) {
             Page<Case> casesPage = "LAWYER".equalsIgnoreCase(role) 
                 ? caseRepository.searchCasesForLawyer(userId, "", pageable)
@@ -67,28 +62,27 @@ public class CaseService {
             return casesPage.map(c -> mapToResponseWithNames(c, nameMap));
         }
 
-        // 2. TÌM KIẾM NÂNG CAO (In-memory filtering)
         List<Case> allCases = "LAWYER".equalsIgnoreCase(role)
                 ? caseRepository.findAllByLawyerId(userId)
                 : caseRepository.findAllByClientId(userId);
 
         if (allCases.isEmpty()) return new PageImpl<>(new ArrayList<>(), pageable, 0);
 
-        // Fetch thông tin người dùng từ user-service
         List<Long> userIds = extractIdsFromList(allCases);
         Map<Long, UserResponse> userDetailMap = fetchFullUserDetails(userIds);
 
-        // Lọc trong bộ nhớ theo Tên/SĐT/Email/Tiêu đề
         List<CaseResponse> filtered = allCases.stream()
             .map(c -> {
                 UserResponse lawyer = userDetailMap.get(c.getLawyerId());
                 UserResponse client = userDetailMap.get(c.getClientId());
                 
-                boolean matchTitle = c.getTitle().toLowerCase().contains(kw);
+                boolean matchText = (c.getTitle() != null && c.getTitle().toLowerCase().contains(kw)) ||
+                                   (c.getDescription() != null && c.getDescription().toLowerCase().contains(kw));
+                
                 boolean matchLawyer = lawyer != null && matchesKeyword(lawyer, kw);
                 boolean matchClient = client != null && matchesKeyword(client, kw);
 
-                if (matchTitle || matchLawyer || matchClient) {
+                if (matchText || matchLawyer || matchClient) {
                     CaseResponse res = mapToResponse(c);
                     res.setLawyerName(lawyer != null ? lawyer.getFullName() : "Không xác định");
                     res.setClientName(client != null ? client.getFullName() : "Không xác định");
@@ -100,7 +94,6 @@ public class CaseService {
             .sorted(Comparator.comparing(CaseResponse::getCreatedAt).reversed())
             .collect(Collectors.toList());
 
-        // Phân trang kết quả sau khi lọc
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), filtered.size());
         if (start > filtered.size()) return new PageImpl<>(new ArrayList<>(), pageable, filtered.size());
@@ -115,14 +108,19 @@ public class CaseService {
 
     private Map<Long, UserResponse> fetchFullUserDetails(List<Long> ids) {
         Map<Long, UserResponse> map = new HashMap<>();
+        if (ids == null || ids.isEmpty()) return map;
         try {
             var res = userClient.getUsersByIds(ids);
             if (res != null && res.getResult() != null) {
-                // Dùng getId() khớp với DTO UserResponse trong case-service
-                res.getResult().forEach(u -> map.put(u.getId(), u));
+                for (UserResponse u : res.getResult()) {
+                    // Chú ý: DTO UserResponse ở case-service tôi đã gắn @JsonAlias("userId") cho trường id
+                    if (u.getId() != null) {
+                        map.put(u.getId(), u);
+                    }
+                }
             }
         } catch (Exception e) {
-            log.error("Lỗi gọi user-service (Có thể do 403 hoặc Service chưa chạy): {}", e.getMessage());
+            log.error("LỖI GỌI USER-SERVICE: {}", e.getMessage());
         }
         return map;
     }
@@ -133,7 +131,11 @@ public class CaseService {
         try {
             var userRes = userClient.getUsersByIds(userIds);
             if (userRes != null && userRes.getResult() != null) {
-                userRes.getResult().forEach(u -> nameMap.put(u.getId(), u.getFullName()));
+                userRes.getResult().forEach(u -> {
+                    if (u.getId() != null) {
+                        nameMap.put(u.getId(), u.getFullName());
+                    }
+                });
             }
         } catch (Exception e) {
             log.error("KHÔNG LẤY ĐƯỢC TÊN TỪ USER-SERVICE: {}", e.getMessage());
@@ -168,7 +170,6 @@ public class CaseService {
         } catch (Exception e) { log.error("LỖI ĐỒNG BỘ: {}", e.getMessage()); }
     }
 
-    // Các hàm còn lại (getById, update, delete, upload...) giữ nguyên logic
     public CaseResponse getCaseById(Long id, Long userId) {
         Case c = caseRepository.findById(id).orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
         if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) throw new AppException(ErrorType.FORBIDDEN, "Không có quyền");

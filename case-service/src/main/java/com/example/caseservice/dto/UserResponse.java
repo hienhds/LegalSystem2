@@ -1,5 +1,6 @@
 package com.example.caseservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,10 +13,12 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
+    @JsonAlias("userId") // Map từ "userId" của user-service sang "id"
     private Long id;
+    
     private String username;
     private String email;
     private String fullName;
     private String phoneNumber;
-    private Set<String> roles; // Chứa danh sách các quyền như ROLE_LAWYER, ROLE_CLIENT
+    private Set<String> roles;
 }
