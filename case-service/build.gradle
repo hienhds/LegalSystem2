@@ -31,6 +31,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    
+    // KAFKA - Thêm thư viện này để sửa lỗi NoClassDefFoundError: KafkaTemplate
+    implementation 'org.springframework.kafka:spring-kafka'
 
     // gRPC & Protobuf
     implementation 'net.devh:grpc-client-spring-boot-starter:2.15.0.RELEASE'
