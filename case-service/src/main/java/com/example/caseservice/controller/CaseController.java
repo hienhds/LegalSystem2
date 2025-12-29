@@ -58,6 +58,22 @@ public class CaseController {
                 .build();
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<CaseResponse> updateCase(
+            @PathVariable("id") Long id,
+            @RequestBody CreateCaseRequest request,
+            @RequestHeader("X-User-Id") Long currentUserId,
+            @RequestHeader("X-User-Role") String role) {
+        if (!"LAWYER".equalsIgnoreCase(role)) {
+            throw new RuntimeException("Chỉ luật sư mới có quyền chỉnh sửa thông tin vụ án");
+        }
+        return ApiResponse.<CaseResponse>builder()
+                .code(200)
+                .message("Cập nhật thông tin vụ án thành công")
+                .result(caseService.updateCase(id, request, currentUserId))
+                .build();
+    }
+
     @GetMapping("/{id}/documents/{docId}/download")
     public ApiResponse<String> getDownloadUrl(
             @PathVariable("id") Long id,

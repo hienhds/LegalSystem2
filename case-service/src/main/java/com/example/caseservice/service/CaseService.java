@@ -52,7 +52,6 @@ public class CaseService {
         Case c = caseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
         
-        // Kiểm tra quyền truy cập: phải là luật sư phụ trách hoặc khách hàng của vụ án
         if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền xem thông tin vụ án này");
         }
@@ -60,6 +59,27 @@ public class CaseService {
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(c.getLawyerId(), c.getClientId()));
         
         return mapToResponseWithNames(c, nameMap);
+    }
+
+    @Transactional
+    public CaseResponse updateCase(Long id, CreateCaseRequest request, Long lawyerId) {
+        Case c = caseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
+
+        // Kiểm tra xem có đúng là luật sư phụ trách vụ án này không
+        if (!Objects.equals(c.getLawyerId(), lawyerId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền chỉnh sửa vụ án này");
+        }
+
+        c.setTitle(request.getTitle());
+        c.setDescription(request.getDescription());
+        c.setClientId(request.getClientId());
+
+        Case updatedCase = caseRepository.save(c);
+
+        Map<Long, String> nameMap = fetchUserNames(Arrays.asList(updatedCase.getLawyerId(), updatedCase.getClientId()));
+
+        return mapToResponseWithNames(updatedCase, nameMap);
     }
 
     public Page<CaseResponse> searchMyCases(Long userId, String role, String keyword, Pageable pageable) {
