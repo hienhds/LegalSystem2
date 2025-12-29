@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j // Thêm annotation để dùng log
+@Slf4j
 public class CaseService {
     private final CaseRepository caseRepository;
     private final UserClient userClient;
@@ -43,16 +43,20 @@ public class CaseService {
         
         Case savedCase = caseRepository.save(legalCase);
         
-        // Lấy tên luật sư và khách hàng
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(lawyerId, request.getClientId()));
         
         return mapToResponseWithNames(savedCase, nameMap);
     }
 
-    public CaseResponse getCaseById(Long id) {
+    public CaseResponse getCaseById(Long id, Long userId) {
         Case c = caseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Không tìm thấy vụ án #" + id));
         
+        // Kiểm tra quyền truy cập: phải là luật sư phụ trách hoặc khách hàng của vụ án
+        if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) {
+            throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền xem thông tin vụ án này");
+        }
+
         Map<Long, String> nameMap = fetchUserNames(Arrays.asList(c.getLawyerId(), c.getClientId()));
         
         return mapToResponseWithNames(c, nameMap);
@@ -85,7 +89,6 @@ public class CaseService {
         return new PageImpl<>(responses, pageable, casesPage.getTotalElements());
     }
 
-    // Helper method: Đã thêm log lỗi
     private Map<Long, String> fetchUserNames(List<Long> userIds) {
         Map<Long, String> nameMap = new HashMap<>();
         try {
@@ -96,7 +99,6 @@ public class CaseService {
             }
         } catch (Exception e) {
             log.error("LỖI GỌI USER-SERVICE: {}", e.getMessage());
-            e.printStackTrace(); // In ra stacktrace để xem lỗi kết nối hay lỗi dữ liệu
         }
         return nameMap;
     }
