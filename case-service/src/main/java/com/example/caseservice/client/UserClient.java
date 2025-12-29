@@ -11,10 +11,9 @@ import java.util.List;
 
 @FeignClient(name = "user-service")
 public interface UserClient {
-
     @GetMapping("/api/users/{id}")
     ApiResponse<UserResponse> getUserById(@PathVariable("id") Long id);
 
-    @GetMapping("/api/users/batch")
+    @GetMapping("/api/users/ids")
     ApiResponse<List<UserResponse>> getUsersByIds(@RequestParam("ids") List<Long> ids);
 }

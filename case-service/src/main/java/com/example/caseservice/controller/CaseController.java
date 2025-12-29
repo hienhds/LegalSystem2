@@ -26,70 +26,76 @@ public class CaseController {
         }
         return ApiResponse.<CaseResponse>builder()
                 .code(200)
+                .message("Tạo vụ án mới thành công")
                 .result(caseService.createCase(request, lawyerId))
                 .build();
     }
 
     @GetMapping
     public ApiResponse<Page<CaseResponse>> getMyCases(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "keyword", required = false) String keyword,
             @RequestHeader("X-User-Id") Long userId,
             @RequestHeader("X-User-Role") String role) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ApiResponse.<Page<CaseResponse>>builder()
                 .code(200)
+                .message("Lấy danh sách vụ án thành công")
                 .result(caseService.searchMyCases(userId, role, keyword, pageable))
                 .build();
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<CaseResponse> getCaseById(@PathVariable Long id) {
+    public ApiResponse<CaseResponse> getCaseById(@PathVariable("id") Long id) {
         return ApiResponse.<CaseResponse>builder()
                 .code(200)
+                .message("Lấy thông tin chi tiết vụ án thành công")
                 .result(caseService.getCaseById(id))
                 .build();
     }
 
     @GetMapping("/{id}/documents/{docId}/download")
     public ApiResponse<String> getDownloadUrl(
-            @PathVariable Long id,
-            @PathVariable Long docId,
+            @PathVariable("id") Long id,
+            @PathVariable("docId") Long docId,
             @RequestHeader("X-User-Id") Long userId) {
         return ApiResponse.<String>builder()
                 .code(200)
+                .message("Lấy link tải tài liệu thành công")
                 .result(caseService.getDownloadUrl(id, docId, userId))
                 .build();
     }
 
     @GetMapping("/{id}/documents/{docId}/view")
     public ApiResponse<String> getViewUrl(
-            @PathVariable Long id,
-            @PathVariable Long docId,
+            @PathVariable("id") Long id,
+            @PathVariable("docId") Long docId,
             @RequestHeader("X-User-Id") Long userId) {
         return ApiResponse.<String>builder()
                 .code(200)
+                .message("Lấy link xem tài liệu thành công")
                 .result(caseService.getViewUrl(id, docId, userId))
                 .build();
     }
 
     @PostMapping("/{id}/documents")
     public ApiResponse<String> uploadDocument(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestParam("file") MultipartFile file,
             @RequestHeader("X-User-Id") Long userId) {
         return ApiResponse.<String>builder()
                 .code(200)
+                .message("Tải tài liệu lên thành công")
                 .result(caseService.uploadCaseDocument(id, userId, file))
                 .build();
     }
 
     @DeleteMapping("/{id}/documents/{docId}")
     public ApiResponse<Void> deleteDocument(
-            @PathVariable Long id,
-            @PathVariable Long docId,
+            @PathVariable("id") Long id,
+            @PathVariable("docId") Long docId,
             @RequestHeader("X-User-Id") Long userId) {
         caseService.deleteDocument(id, docId, userId);
         return ApiResponse.<Void>builder()
@@ -100,18 +106,19 @@ public class CaseController {
 
     @PostMapping("/{caseId}/progress")
     public ApiResponse<CaseUpdateResponse> updateProgress(
-            @PathVariable Long caseId,
+            @PathVariable("caseId") Long caseId,
             @RequestBody UpdateProgressRequest request,
             @RequestHeader("X-User-Id") Long lawyerId) {
         return ApiResponse.<CaseUpdateResponse>builder()
                 .code(200)
+                .message("Cập nhật tiến độ vụ án thành công")
                 .result(caseService.updateProgress(caseId, request, lawyerId))
                 .build();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteCase(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestHeader("X-User-Id") Long userId) {
         caseService.deleteCase(id, userId);
         return ApiResponse.<Void>builder()

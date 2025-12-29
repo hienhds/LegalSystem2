@@ -7,7 +7,6 @@ import com.example.caseservice.entity.*;
 import com.example.caseservice.exception.AppException;
 import com.example.caseservice.exception.ErrorType;
 import com.example.caseservice.repository.*;
-import com.example.fileservice.grpc.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -85,25 +84,23 @@ public class CaseService {
         Case c = caseRepository.findById(caseId)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
 
-        if (!c.getLawyerId().equals(userId)) {
+        if (!Objects.equals(c.getLawyerId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư phụ trách mới được thêm tài liệu");
         }
 
-        PresignedUrlResponse response = fileClient.getPresignedUploadUrl(file, userId);
-        if (!response.getSuccess()) {
-            throw new AppException(ErrorType.INTERNAL_ERROR, "Lỗi File Service: " + response.getErrorMessage());
-        }
+        // Gọi quy trình tự động: Xin link -> Tự Upload -> Tự Confirm status
+        String fileId = fileClient.uploadFileDirectly(file, userId, caseId.toString());
 
         CaseDocument doc = CaseDocument.builder()
                 .legalCase(c)
                 .fileName(file.getOriginalFilename())
-                .filePath(response.getFileId())
+                .filePath(fileId)
                 .fileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
                 .build();
 
         documentRepository.save(doc);
-        return response.getPresignedUrl();
+        return "Tải lên thành công. FileId: " + fileId;
     }
 
     public String getDownloadUrl(Long caseId, Long docId, Long userId) {
@@ -120,7 +117,7 @@ public class CaseService {
         Case c = caseRepository.findById(caseId)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
 
-        if (!c.getLawyerId().equals(userId) && !c.getClientId().equals(userId)) {
+        if (!Objects.equals(c.getLawyerId(), userId) && !Objects.equals(c.getClientId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền truy cập tài liệu này");
         }
 
@@ -131,7 +128,7 @@ public class CaseService {
     @Transactional
     public void deleteDocument(Long caseId, Long docId, Long userId) {
         CaseDocument doc = validateAndGetDocument(caseId, docId, userId);
-        if (!doc.getLegalCase().getLawyerId().equals(userId)) {
+        if (!Objects.equals(doc.getLegalCase().getLawyerId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư phụ trách mới được xóa tài liệu");
         }
         documentRepository.delete(doc);
@@ -142,7 +139,7 @@ public class CaseService {
         Case c = caseRepository.findById(caseId)
                 .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
 
-        if (!c.getLawyerId().equals(userId)) {
+        if (!Objects.equals(c.getLawyerId(), userId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền xóa vụ án này");
         }
         caseRepository.delete(c);
@@ -151,9 +148,9 @@ public class CaseService {
     @Transactional
     public CaseUpdateResponse updateProgress(Long caseId, UpdateProgressRequest request, Long lawyerId) {
         Case c = caseRepository.findById(caseId)
-                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Case not found"));
+                .orElseThrow(() -> new AppException(ErrorType.NOT_FOUND, "Vụ án không tồn tại"));
 
-        if (!c.getLawyerId().equals(lawyerId)) {
+        if (!Objects.equals(c.getLawyerId(), lawyerId)) {
             throw new AppException(ErrorType.FORBIDDEN, "Bạn không có quyền cập nhật vụ án này");
         }
 
