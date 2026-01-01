@@ -19,7 +19,7 @@ public class InviteEvent {
     private Long receiverId;
     private String receiverName;
     private String receiverAvatar;
-    private Conversation.ConversationType type;
+    private String type;
     private String note;
     private LocalDateTime timestamp;
 }

@@ -50,7 +50,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
   # ================= ZOOKEEPER =================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -107,6 +106,53 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+
+    # ================= DOCUMENT SERVICE =================
+  document-service:
+    build:
+      context: ./document-service
+    container_name: document-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_APPLICATION_NAME: document-service
+      SERVER_PORT: 8085
+
+      # ===== MYSQL =====
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/document_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 231123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+
+      # ===== MONGODB =====
+      SPRING_DATA_MONGODB_URI: mongodb://admin:231123@mongodb:27017/document_db?authSource=admin
+
+      # ===== REDIS =====
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # ===== JWT =====
+      JWT_SECRET: tfcpDkRTBFSltRZhYBfgQmxEF612WEecB0XkiibKf3W+cwZXKDEz+KSjBpPuzbZxnD1HRLgOhtWVgISia6WPaQ==
+      JWT_EXPIRATION_ACCESS: 900000
+      JWT_EXPIRATION_REFRESH: 604800000
+
+      # ===== EUREKA =====
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - legal-network
+
 
   # ================= USER SERVICE =================
   user-service:
