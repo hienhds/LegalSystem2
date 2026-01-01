@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+
+package fileservice;
+
+option java_multiple_files = true;
+option java_package = "com.example.fileservice.grpc";
+option java_outer_classname = "FileServiceProto";
+
+
+
+/* =========================
+   FILE SERVICE
+========================= */
+service FileService {
+
+  // 1️⃣ Generate upload presigned URL
+  rpc GenerateUploadUrl (GenerateUploadUrlRequest)
+      returns (PresignedUrlResponse);
+
+  // 2️⃣ Generate download presigned URL
+  rpc GenerateDownloadUrl (GenerateDownloadUrlRequest)
+      returns (PresignedUrlResponse);
+
+  rpc GeneratePreviewUrl(FileIdRequest)
+      returns (PresignedUrlResponse);
+
+  // 3️⃣ Delete file
+  rpc DeleteFile (DeleteFileRequest)
+      returns (DeleteFileResponse);
+
+  // 4️⃣ Get file metadata
+  rpc GetFileMetadata (GetFileMetadataRequest)
+      returns (GetFileMetadataResponse);
+
+  // 5️⃣ Notify upload completed
+  rpc ConfirmUpload (ConfirmUploadRequest)
+      returns (ConfirmUploadResponse);
+}
+
+/* =========================
+   REQUEST / RESPONSE
+========================= */
+
+message GenerateUploadUrlRequest {
+  string file_name = 1;
+  string content_type = 2;
+  int64 file_size = 3;
+  string uploaded_by = 4;
+  string business_type = 5;   // CHAT_AVATAR, MESSAGE_FILE, POST_MEDIA
+  string business_id = 6;     // conversationId / messageId
+}
+
+message GenerateDownloadUrlRequest {
+  string file_id = 1;
+  string file_name = 2;
+}
+
+message FileIdRequest {
+  string file_id = 1;
+}
+
+message PresignedUrlResponse {
+  bool success = 1;
+  string file_id = 2;
+  string presigned_url = 3;
+  int64 expired_at = 4;
+  string error_message = 5;
+}
+
+message DeleteFileRequest {
+  string file_id = 1;
+}
+
+message DeleteFileResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetFileMetadataRequest {
+  string file_id = 1;
+}
+
+message GetFileMetadataResponse {
+  bool success = 1;
+  FileMetadata metadata = 2;
+  string error_message = 3;
+}
+
+message ConfirmUploadRequest {
+  string file_id = 1;
+}
+
+message ConfirmUploadResponse {
+  bool success = 1;
+}
+
+/* =========================
+   METADATA
+========================= */
+message FileMetadata {
+  string file_id = 1;
+  string file_name = 2;
+  string content_type = 3;
+  int64 file_size = 4;
+  string uploaded_by = 5;
+  int64 uploaded_at = 6;
+  string bucket = 7;
+  string object_path = 8;
+  string business_type = 9;
+  string business_id = 10;
+}
+
