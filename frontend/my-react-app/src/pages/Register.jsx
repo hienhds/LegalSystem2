@@ -27,11 +27,20 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, phoneNumber, fullName, password }),
       });
-      if (!res.ok) throw new Error();
-      // Đăng ký thành công, hiển thị thông báo kiểm tra email
-      setSuccess(true);
-    } catch {
-      setError("Đăng ký thất bại! Email đã tồn tại hoặc dữ liệu không hợp lệ.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Lấy message lỗi từ ApiResponse của Backend
+        setError(data.message || "Đăng ký thất bại! Vui lòng kiểm tra lại dữ liệu.");
+        return;
+      }
+
+      // Đăng ký thành công (ApiResponse.success = true)
+      if (data.success) {
+        setSuccess(true);
+      }
+    } catch (err) {
+      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -77,9 +86,6 @@ export default function Register() {
                 <p className="pb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</p>
                 <div className="relative flex w-full items-center">
                   <input className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-white px-4 py-3 pr-10 text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-background-dark dark:text-white dark:placeholder:text-slate-500" placeholder="Nhập mật khẩu của bạn" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-                  <button className="absolute right-0 mr-3 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" type="button">
-                    <span className="material-symbols-outlined text-xl">visibility_off</span>
-                  </button>
                 </div>
               </label>
             </div>
@@ -88,20 +94,17 @@ export default function Register() {
                 <p className="pb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Xác nhận mật khẩu</p>
                 <div className="relative flex w-full items-center">
                   <input className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-white px-4 py-3 pr-10 text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-background-dark dark:text-white dark:placeholder:text-slate-500" placeholder="Nhập lại mật khẩu" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-                  <button className="absolute right-0 mr-3 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" type="button">
-                    <span className="material-symbols-outlined text-xl">visibility_off</span>
-                  </button>
                 </div>
               </label>
             </div>
-            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+            {error && <div className="text-red-500 text-sm text-center font-medium">{error}</div>}
             <div className="flex flex-col items-center gap-4">
-              <button type="submit" className="flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 text-base font-medium text-white hover:bg-opacity-90" disabled={loading}>
+              <button type="submit" className="flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 text-base font-medium text-white hover:bg-opacity-90 disabled:opacity-50" disabled={loading}>
                 {loading ? "Đang đăng ký..." : "Đăng ký"}
               </button>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Đã có tài khoản?
-                <a className="font-semibold text-primary hover:underline" href="/">Đăng nhập</a>
+                <span className="font-semibold text-primary hover:underline cursor-pointer ml-1" onClick={() => navigate("/")}>Đăng nhập</span>
               </p>
             </div>
           </form>

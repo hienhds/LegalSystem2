@@ -3,7 +3,7 @@ import axiosInstance from "../utils/axiosInstance";
 export const caseService = {
   // 1. Tạo vụ án mới
   createCase: async (data) => {
-    // data: { title, description, clientId }
+    // Backend trả về ApiResponse<CaseResponse>
     return await axiosInstance.post("/api/cases", data);
   },
 
@@ -12,9 +12,8 @@ export const caseService = {
     return await axiosInstance.get(`/api/cases/${caseId}`);
   },
 
-  // 3. Cập nhật tiến độ (Chỉ dành cho Luật sư)
+  // 3. Cập nhật tiến độ
   updateProgress: async (caseId, data) => {
-    // data: { title, description, status }
     return await axiosInstance.post(`/api/cases/${caseId}/updates`, data);
   },
 
@@ -29,37 +28,33 @@ export const caseService = {
     });
   },
   
-  // 5. LẤY DANH SÁCH VỤ ÁN CỦA TÔI
+  // 5. Lấy danh sách vụ án
   getMyCases: async (page = 0, size = 10, keyword = "") => {
     return await axiosInstance.get(`/api/cases`, {
-      params: { 
-        page, 
-        size, 
-        keyword
-      }
+      params: { page, size, keyword }
     });
   },
 
-  // 6. DOWNLOAD TÀI LIỆU
+  // 6. Download tài liệu
   downloadDocument: async (caseId, docId) => {
     return await axiosInstance.get(`/api/cases/${caseId}/documents/${docId}/download`, {
-        responseType: 'blob', // Quan trọng để tải file
+        responseType: 'blob',
     });
   },
 
-  // 7. XEM TÀI LIỆU TRỰC TIẾP
+  // 7. Xem tài liệu trực tiếp
   viewDocument: async (caseId, docId) => {
     return await axiosInstance.get(`/api/cases/${caseId}/documents/${docId}/view`, {
-        responseType: 'blob', // Vẫn lấy blob để xử lý token bảo mật
+        responseType: 'blob',
     });
   },
 
-  // 8. XÓA TÀI LIỆU
+  // 8. Xóa tài liệu
   deleteDocument: async (caseId, docId) => {
     return await axiosInstance.delete(`/api/cases/${caseId}/documents/${docId}`);
   },
 
-  // 9. XÓA VỤ ÁN (MỚI THÊM)
+  // 9. Xóa vụ án
   deleteCase: async (caseId) => {
     return await axiosInstance.delete(`/api/cases/${caseId}`);
   }

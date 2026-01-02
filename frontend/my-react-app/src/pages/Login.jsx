@@ -39,40 +39,34 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok || data.success === false) {
-        // Nếu tài khoản chưa kích hoạt
-        if (data.message && data.message.toLowerCase().includes("chưa được kích hoạt")) {
-          setError(data.message);
-        } else {
-          setError("Sai tài khoản hoặc mật khẩu!");
-        }
+
+      if (!res.ok) {
+        // Backend trả về ApiResponse qua GlobalExceptionHandler khi lỗi
+        setError(data.message || "Sai tài khoản hoặc mật khẩu!");
         return;
       }
-      // Lưu accessToken và refreshToken vào localStorage
+
+      // Khi success, Backend trả về trực tiếp JwtResponse (accessToken, refreshToken)
       if (data.accessToken) {
         localStorage.setItem("accessToken", data.accessToken);
-      }
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
+        if (data.refreshToken) {
+          localStorage.setItem("refreshToken", data.refreshToken);
+        }
 
-      // Save credentials if remember me is checked
-      if (rememberMe) {
-        const accounts = JSON.parse(localStorage.getItem("savedAccounts") || "[]");
-        // Remove existing account with same email
-        const filteredAccounts = accounts.filter(acc => acc.email !== email);
-        // Add current account at the beginning
-        const newAccounts = [{ email, password }, ...filteredAccounts].slice(0, 5); // Keep max 5 accounts
-        localStorage.setItem("savedAccounts", JSON.stringify(newAccounts));
+        // Lưu thông tin nếu chọn "Nhớ mật khẩu"
+        if (rememberMe) {
+          const accounts = JSON.parse(localStorage.getItem("savedAccounts") || "[]");
+          const filteredAccounts = accounts.filter(acc => acc.email !== email);
+          const newAccounts = [{ email, password }, ...filteredAccounts].slice(0, 5);
+          localStorage.setItem("savedAccounts", JSON.stringify(newAccounts));
+        }
+        
+        setupTokenRefreshTimer();
+        window.dispatchEvent(new CustomEvent('user-login'));
+        navigate("/home");
       }
-      
-      // Setup token refresh timer and dispatch login event
-      setupTokenRefreshTimer();
-      window.dispatchEvent(new CustomEvent('user-login'));
-      
-      navigate("/home");
-    } catch {
-      setError("Sai tài khoản hoặc mật khẩu!");
+    } catch (err) {
+      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -91,9 +85,8 @@ export default function Login() {
             }}
           ></div>
         </div>
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-background-dark">
           <form className="w-full max-w-md space-y-8" onSubmit={handleLogin}>
-            {/* ...existing form code... */}
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="material-symbols-outlined text-primary text-4xl">account_balance</span>
@@ -163,7 +156,7 @@ export default function Login() {
                 </div>
               </label>
             </div>
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer">
                 <input
@@ -189,15 +182,11 @@ export default function Login() {
               >
                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
-                <div className="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
-              </div>
             </div>
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Chưa có tài khoản?
               <span
-                className="font-medium text-primary hover:underline cursor-pointer"
+                className="font-medium text-primary hover:underline cursor-pointer ml-1"
                 onClick={() => navigate("/register")}
               >
                 Đăng ký ngay

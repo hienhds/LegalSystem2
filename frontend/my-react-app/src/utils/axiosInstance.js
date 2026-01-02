@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request interceptor: Add access token to all requests
+// Request interceptor: Gắn token vào header
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -20,39 +20,38 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: Auto-refresh token on 401 errors
+// Response interceptor: Xử lý bóc tách ApiResponse và tự động refresh token
 axiosInstance.interceptors.response.use(
-  (response) => response, // Pass through successful responses
+  (response) => {
+    // Nếu Backend trả về ApiResponse (success, status, data...), ta trả về phần data thực sự
+    if (response.data && Object.prototype.hasOwnProperty.call(response.data, 'success')) {
+      return response.data;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 error and we haven't tried to refresh yet
+    // Xử lý lỗi 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // Mark to prevent infinite loop
+      originalRequest._retry = true;
 
       try {
-        // Attempt to refresh the access token
         const newAccessToken = await refreshAccessToken();
-        
         if (newAccessToken) {
-          // Update the failed request with new token
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          
-          // Retry the original request with new token
           return axiosInstance(originalRequest);
         }
       } catch (refreshError) {
-        // If refresh fails, redirect to login
         console.error("Token refresh failed:", refreshError);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("role");
+        localStorage.clear();
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
 
-    return Promise.reject(error);
+    // Trả về error response data để component có thể đọc được message lỗi từ Backend
+    return Promise.reject(error.response?.data || error);
   }
 );
 
