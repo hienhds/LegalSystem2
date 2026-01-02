@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../utils/api";
 
 export default function useUserProfile() {
   const [user, setUser] = useState(null);
@@ -7,14 +6,25 @@ export default function useUserProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await apiFetch("http://localhost:8080/api/users/profile");
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch("http://localhost:8080/api/users/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
         if (res.ok) {
           const data = await res.json();
           setUser(data.data);
         } else {
           setUser(null);
         }
-      } catch {
+      } catch (err) {
+        // Silently fail - services may be down
         setUser(null);
       } finally {
         setLoading(false);

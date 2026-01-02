@@ -14,22 +14,60 @@ export default function Header() {
           onClick={() => navigate("/")}
         >
           <div className="size-8 text-custom-blue-dark">
-            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+            <svg
+              fill="none"
+              viewBox="0 0 48 48"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 6H42L36 24L42 42H6L12 24L6 6Z"
+                fill="currentColor"
+              ></path>
+            </svg>
           </div>
-          <h2 className="text-slate-900 dark:text-slate-50 text-xl font-bold leading-tight tracking-[-0.015em]">LegalConnect</h2>
+          <h2 className="text-slate-900 dark:text-slate-50 text-xl font-bold leading-tight tracking-[-0.015em]">
+            LegalConnect
+          </h2>
         </div>
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/find-lawyer" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Luật Sư</Link>
-          <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hỏi Đáp</a>
-          <Link to="/legal-documents" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Văn Bản Pháp Luật</Link>
-          <Link to="/contact" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Liên Hệ</Link>
-          <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hồ Sơ</a>
+          <Link
+            to="/find-lawyer"
+            className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base"
+          >
+            Luật Sư
+          </Link>
+          <a
+            className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base"
+            href="#"
+          >
+            Hỏi Đáp
+          </a>
+          <Link
+            to="/legal-documents"
+            className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base"
+          >
+            Văn Bản Pháp Luật
+          </Link>
+          <Link
+            to="/contact"
+            className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base"
+          >
+            Liên Hệ
+          </Link>
+          <Link
+            to="/cases"
+            className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base"
+          >
+            Hồ Sơ Vụ Án
+          </Link>
           {user?.roles?.includes("ADMIN") && (
             <button
               onClick={() => navigate("/admin/dashboard")}
               className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md transition-all duration-200"
             >
-              <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+              <span className="material-symbols-outlined text-lg">
+                admin_panel_settings
+              </span>
               Admin Dashboard
             </button>
           )}
@@ -68,7 +106,7 @@ export default function Header() {
                 onClick={() => {
                   localStorage.removeItem("accessToken");
                   localStorage.removeItem("refreshToken");
-                  window.dispatchEvent(new CustomEvent('user-logout'));
+                  window.dispatchEvent(new CustomEvent("user-logout"));
                   navigate("/login");
                 }}
               >
@@ -77,10 +115,16 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Link to="/login" className="hidden md:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-slate-300 dark:hover:bg-slate-700">
+              <Link
+                to="/login"
+                className="hidden md:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-slate-300 dark:hover:bg-slate-700"
+              >
                 <span className="truncate">Đăng nhập</span>
               </Link>
-              <Link to="/register" className="hidden md:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-slate-300 dark:hover:bg-slate-700">
+              <Link
+                to="/register"
+                className="hidden md:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-slate-300 dark:hover:bg-slate-700"
+              >
                 <span className="truncate">Đăng ký</span>
               </Link>
             </>

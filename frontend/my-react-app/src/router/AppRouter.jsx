@@ -17,55 +17,106 @@ import LegalDocumentDetail from "../pages/LegalDocumentDetail";
 import FindLawyer from "../pages/FindLawyer";
 import LawyerDetail from "../pages/LawyerDetail";
 import Contact from "../pages/Contact";
+import CaseList from "../pages/CaseList";
+import CaseDetail from "../pages/CaseDetail";
+import CreateCase from "../pages/CreateCase";
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
-        <Route path="/home" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <UserProfile />
-          </ProtectedRoute>
-        } />
-        <Route path="/lawyer-profile" element={
-          <ProtectedRoute>
-            <LawyerProfile />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/dashboard" element={
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/users" element={
-          <ProtectedRoute>
-            <UserManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/lawyers" element={
-          <ProtectedRoute>
-            <LawyerManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/documents" element={
-          <ProtectedRoute>
-            <DocumentManagement />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lawyer-profile"
+          element={
+            <ProtectedRoute>
+              <LawyerProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lawyers"
+          element={
+            <ProtectedRoute>
+              <LawyerManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/documents"
+          element={
+            <ProtectedRoute>
+              <DocumentManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cases"
+          element={
+            <ProtectedRoute>
+              <CaseList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cases/:id"
+          element={
+            <ProtectedRoute>
+              <CaseDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-case"
+          element={
+            <ProtectedRoute>
+              <CreateCase />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/legal-documents" element={<LegalDocuments />} />
         <Route path="/legal-documents/:id" element={<LegalDocumentDetail />} />
         <Route path="/document/:id" element={<LegalDocumentDetail />} />
