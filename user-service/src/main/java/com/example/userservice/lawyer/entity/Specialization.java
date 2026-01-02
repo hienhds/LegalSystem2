@@ -1,6 +1,7 @@
 package com.example.userservice.lawyer.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,5 +27,6 @@ public class Specialization {
 
     @OneToMany(mappedBy = "specialization", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private Set<LawyerSpecialization> lawyers = new HashSet<>();
 }

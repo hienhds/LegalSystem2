@@ -4,8 +4,10 @@ import { refreshAccessToken } from "./api";
 const axiosInstance = axios.create({
   baseURL: "http://localhost:8080",
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=utf-8",
   },
+  responseType: 'json',
+  responseEncoding: 'utf8',
 });
 
 // Request interceptor: Add access token to all requests

@@ -13,7 +13,6 @@ import UserManagement from "../pages/UserManagement";
 import LawyerManagement from "../pages/LawyerManagement";
 import DocumentManagement from "../pages/DocumentManagement";
 import LegalDocuments from "../pages/LegalDocuments";
-import LegalDocumentDetail from "../pages/LegalDocumentDetail";
 import FindLawyer from "../pages/FindLawyer";
 import LawyerDetail from "../pages/LawyerDetail";
 import Contact from "../pages/Contact";
@@ -67,8 +66,6 @@ export default function AppRouter() {
           </ProtectedRoute>
         } />
         <Route path="/legal-documents" element={<LegalDocuments />} />
-        <Route path="/legal-documents/:id" element={<LegalDocumentDetail />} />
-        <Route path="/document/:id" element={<LegalDocumentDetail />} />
         <Route path="/find-lawyer" element={<FindLawyer />} />
         <Route path="/lawyers/:id" element={<LawyerDetail />} />
         <Route path="/lawyer/:id" element={<LawyerDetail />} />

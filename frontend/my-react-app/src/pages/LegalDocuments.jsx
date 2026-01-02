@@ -1,472 +1,412 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import Layout from "../components/Layout";
-import axiosInstance from "../utils/axiosInstance";
+import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
+import axiosInstance from '../utils/axiosInstance';
 
 export default function LegalDocuments() {
-  const [showAIChat, setShowAIChat] = useState(false);
-  
-  // Data states
-  const [documents, setDocuments] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [stats, setStats] = useState({
-    totalDocuments: 0,
-    newDocuments: 0,
-    mostViewed: '',
-    totalCategories: 0
-  });
-  
-  // Filter states
-  const [filters, setFilters] = useState({
-    keyword: '',
-    category: '',
-    sortBy: 'createdAt',
-    status: ''
-  });
-  
-  // Pagination states
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 10,
-    totalPages: 0,
-    totalElements: 0
-  });
-  
-  // Loading states
+  const [chuDeList, setChuDeList] = useState([]);
+  const [selectedChuDe, setSelectedChuDe] = useState(null);
+  const [treeData, setTreeData] = useState([]);
+  const [selectedDieu, setSelectedDieu] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [expandedNodes, setExpandedNodes] = useState({});
+  const [loadedNodes, setLoadedNodes] = useState({}); // Cache loaded data
 
-  // Fetch categories on mount
+  // Fetch danh sách chủ đề
   useEffect(() => {
-    fetchCategories();
-    fetchStats();
+    fetchChuDeList();
   }, []);
 
-  // Fetch documents when filters or pagination change
-  useEffect(() => {
-    fetchDocuments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.category, filters.sortBy, filters.status, pagination.page]);
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (filters.keyword !== undefined) {
-        setPagination(prev => ({ ...prev, page: 0 }));
-        fetchDocuments();
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.keyword]);
-
-  const fetchCategories = async () => {
+  const fetchChuDeList = async () => {
     try {
-      const response = await axiosInstance.get('/api/documents/categories');
+      const response = await axiosInstance.get('/api/documents/chu-de');
       if (response.data.success) {
-        setCategories(response.data.data.categories || []);
+        setChuDeList(response.data.data || []);
+        // Auto select first chu de
+        if (response.data.data && response.data.data.length > 0) {
+          loadChuDeTree(response.data.data[0]);
+        }
       }
-    } catch (err) {
-      console.error('Error fetching categories:', err);
+    } catch (error) {
+      console.error('Error fetching chu de list:', error);
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const [statsRes, trendingRes] = await Promise.all([
-        axiosInstance.get('/api/documents/categories/stats'),
-        axiosInstance.get('/api/documents/trending', { params: { page: 0, size: 1 } })
-      ]);
-      
-      if (statsRes.data.success) {
-        const categoryStats = statsRes.data.data.categoryStats || [];
-        const total = categoryStats.reduce((sum, cat) => sum + cat.documentCount, 0);
-        setStats(prev => ({
-          ...prev,
-          totalDocuments: total,
-          totalCategories: categoryStats.length
-        }));
-      }
-      
-      if (trendingRes.data.success && trendingRes.data.data.content?.length > 0) {
-        setStats(prev => ({
-          ...prev,
-          mostViewed: trendingRes.data.data.content[0].title
-        }));
-      }
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-
-  const fetchDocuments = async () => {
+  // Load ONLY de muc list (không load children)
+  const loadChuDeTree = async (chuDe) => {
     try {
       setLoading(true);
-      setError(null);
+      setSelectedChuDe(chuDe);
+      setSelectedDieu(null);
       
-      const params = {
-        page: pagination.page,
-        size: pagination.size,
-        sortBy: filters.sortBy,
-        sortDirection: 'desc'
-      };
+      // Reset expanded nodes và loaded cache
+      setExpandedNodes({});
+      setLoadedNodes({});
       
-      if (filters.keyword) params.keyword = filters.keyword;
-      if (filters.category) params.category = filters.category;
-      if (filters.status) params.status = filters.status;
-      
-      const response = await axiosInstance.get('/api/documents/search', { params });
-      
-      if (response.data.success) {
-        const pageData = response.data.data;
-        setDocuments(pageData.content || []);
-        setPagination(prev => ({
-          ...prev,
-          totalPages: pageData.totalPages || 0,
-          totalElements: pageData.totalElements || 0
+      // Chỉ load de muc, không load chuong và dieu
+      const deMucRes = await axiosInstance.get(`/api/documents/chu-de/${chuDe.chuDeId}`);
+      if (deMucRes.data.success) {
+        // FORCE empty children - bỏ tất cả nested data từ API
+        const deMucList = (deMucRes.data.data || []).map(dm => ({
+          id: dm.id,
+          deMucId: dm.deMucId,
+          text: dm.text,
+          chuongList: [] // Empty - sẽ load lazy
         }));
+        setTreeData(deMucList);
       }
-    } catch (err) {
-      console.error('Error fetching documents:', err);
-      setError('Không thể tải danh sách văn bản. Vui lòng thử lại.');
-      setDocuments([]);
+    } catch (error) {
+      console.error('Error loading tree:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearchChange = (e) => {
-    setFilters(prev => ({ ...prev, keyword: e.target.value }));
+  // Load chuong khi expand de muc
+  const loadChuongForDeMuc = async (deMuc) => {
+    const nodeKey = `demuc-${deMuc.id}`;
+    
+    // Nếu đã load rồi thì không load lại
+    if (loadedNodes[nodeKey]) {
+      return;
+    }
+
+    try {
+      const chuongRes = await axiosInstance.get(`/api/documents/de-muc/${deMuc.deMucId}`);
+      if (chuongRes.data.success) {
+        // Hiển thị tất cả items (cả Chương lẫn Mục)
+        const chuongList = (chuongRes.data.data || []).map(c => ({
+          id: c.id,
+          text: c.text,
+          dieuList: [] // Sẽ load lazy
+        }));
+        
+        // Update tree data
+        setTreeData(prev => prev.map(dm => 
+          dm.id === deMuc.id ? { ...dm, chuongList } : dm
+        ));
+        
+        // Mark as loaded
+        setLoadedNodes(prev => ({ ...prev, [nodeKey]: true }));
+      }
+    } catch (error) {
+      console.error('Error loading chuong:', error);
+    }
   };
 
-  const handleCategoryChange = (e) => {
-    setFilters(prev => ({ ...prev, category: e.target.value }));
-    setPagination(prev => ({ ...prev, page: 0 }));
+  // Load dieu khi expand chuong (hiển thị tất cả)
+  const loadMucOrDieuForChuong = async (deMucId, chuong) => {
+    const nodeKey = `chuong-${chuong.id}`;
+    
+    // Nếu đã load rồi thì không load lại
+    if (loadedNodes[nodeKey]) {
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get(`/api/documents/chuong/${chuong.id}`);
+      if (response.data.success) {
+        const items = response.data.data || [];
+        
+        // Hiển thị tất cả items như Điều trực tiếp
+        const dieuList = items;
+        
+        setTreeData(prev => prev.map(dm => {
+          if (dm.id === deMucId) {
+            return {
+              ...dm,
+              chuongList: dm.chuongList.map(c => 
+                c.id === chuong.id ? { ...c, dieuList } : c
+              )
+            };
+          }
+          return dm;
+        }));
+        
+        // Mark as loaded
+        setLoadedNodes(prev => ({ ...prev, [nodeKey]: true }));
+      }
+    } catch (error) {
+      console.error('Error loading dieu:', error);
+    }
   };
 
-  const handleSortChange = (e) => {
-    const value = e.target.value;
-    setFilters(prev => ({ ...prev, sortBy: value }));
-    setPagination(prev => ({ ...prev, page: 0 }));
+  const toggleNode = async (nodeId, nodeType, data) => {
+    const isExpanding = !expandedNodes[nodeId];
+    
+    setExpandedNodes(prev => ({
+      ...prev,
+      [nodeId]: isExpanding
+    }));
+
+    // Lazy load khi expand
+    if (isExpanding) {
+      if (nodeType === 'demuc') {
+        await loadChuongForDeMuc(data);
+      } else if (nodeType === 'chuong') {
+        await loadMucOrDieuForChuong(data.deMucId, data.chuong);
+      }
+    }
   };
 
-  const handleStatusChange = (e) => {
-    setFilters(prev => ({ ...prev, status: e.target.value }));
-    setPagination(prev => ({ ...prev, page: 0 }));
+  const handleDieuClick = (dieu) => {
+    setSelectedDieu(dieu);
   };
 
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
-  };
+  const filteredTree = searchKeyword
+    ? treeData.filter(deMuc =>
+        deMuc.text?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        deMuc.chuongList?.some(chuong =>
+          chuong.text?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+          chuong.dieuList?.some(dieu =>
+            dieu.tieuDe?.toLowerCase().includes(searchKeyword.toLowerCase())
+          )
+        )
+      )
+    : treeData;
 
   return (
-    <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <Layout>
-      <div style={{ fontFamily: "'Noto Sans', sans-serif" }}>
-      {/* Search Section */}
-      <div className="bg-card-bg dark:bg-card-bg-dark border-b border-border-color dark:border-border-color-dark">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
-          <div className="flex flex-col gap-6">
-            <h1 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-2" style={{ fontFamily: "'Lora', serif" }}>
-              Tra Cứu Văn Bản Pháp Luật
-            </h1>
-
-            {/* Search Input */}
+    <Layout showFooter={false}>
+      <div className="flex flex-1 max-w-7xl mx-auto w-full h-[calc(100vh-64px)] overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-80 bg-gray-100 dark:bg-slate-900 border-r border-gray-300 dark:border-slate-700 flex flex-col h-full hidden md:flex shrink-0">
+          {/* Search */}
+          <div className="p-4 border-b border-gray-300 dark:border-slate-700 bg-gray-200 dark:bg-slate-800">
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <span className="material-symbols-outlined text-slate-500">search</span>
-              </div>
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">
+                <span className="material-symbols-outlined text-sm">search</span>
+              </span>
               <input
-                className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-3 pl-12 pr-4 text-slate-900 dark:text-white shadow-sm placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-base"
-                placeholder="Tìm kiếm theo số hiệu, trích yếu, nội dung..."
-                type="search"
-                value={filters.keyword}
-                onChange={handleSearchChange}
+                className="w-full py-2 pl-10 pr-4 text-sm text-gray-700 bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-gray-200 placeholder-gray-400"
+                placeholder="Nhập từ khóa để tìm kiếm..."
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
               />
             </div>
+          </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 flex-shrink-0">
-                <select 
-                  className="rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white shadow-sm focus:border-blue-600 focus:ring-blue-600 text-sm"
-                  value={filters.category}
-                  onChange={handleCategoryChange}
-                >
-                  <option value="">Tất cả danh mục</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                <select 
-                  className="rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white shadow-sm focus:border-blue-600 focus:ring-blue-600 text-sm"
-                  value={filters.sortBy}
-                  onChange={handleSortChange}
-                >
-                  <option value="createdAt">Ngày ban hành mới nhất</option>
-                  <option value="viewCount">Xem nhiều nhất</option>
-                  <option value="title">Theo tên</option>
-                </select>
-                <select 
-                  className="rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white shadow-sm focus:border-blue-600 focus:ring-blue-600 text-sm"
-                  value={filters.status}
-                  onChange={handleStatusChange}
-                >
-                  <option value="">Mọi trạng thái</option>
-                  <option value="ACTIVE">Còn hiệu lực</option>
-                  <option value="INACTIVE">Hết hiệu lực</option>
-                </select>
+          {/* Tree Structure */}
+          <div className="flex-1 overflow-y-auto custom-scroll p-4 text-sm">
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2">Đang tải...</p>
               </div>
-
-              {/* Popular Tags */}
-              <div className="flex items-center gap-2 overflow-x-auto">
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0">
-                  Phổ biến:
-                </span>
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1 text-sm bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600">
-                    #Lao động
-                  </button>
-                  <button className="px-3 py-1 text-sm bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600">
-                    #Dân sự
-                  </button>
-                  <button className="px-3 py-1 text-sm bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600">
-                    #Hình sự
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex-shrink-0 size-10 flex items-center justify-center rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              <span className="material-symbols-outlined">description</span>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Tổng văn bản</p>
-              <p className="text-xl font-semibold text-slate-900 dark:text-white">{stats.totalDocuments.toLocaleString()}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex-shrink-0 size-10 flex items-center justify-center rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-              <span className="material-symbols-outlined">new_releases</span>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Văn bản mới</p>
-              <p className="text-xl font-semibold text-slate-900 dark:text-white">{pagination.totalElements}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex-shrink-0 size-10 flex items-center justify-center rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-              <span className="material-symbols-outlined">visibility</span>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Xem nhiều</p>
-              <p className="text-xl font-semibold text-slate-900 dark:text-white truncate">
-                {stats.mostViewed || 'Đang cập nhật...'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex-shrink-0 size-10 flex items-center justify-center rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-              <span className="material-symbols-outlined">category</span>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Danh mục</p>
-              <p className="text-xl font-semibold text-slate-900 dark:text-white">{stats.totalCategories}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Document Cards Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-slate-600 dark:text-slate-400">Đang tải văn bản...</p>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
-            <button 
-              onClick={fetchDocuments}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Thử lại
-            </button>
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-20">
-            <span className="material-symbols-outlined text-6xl text-slate-400">description</span>
-            <p className="mt-4 text-slate-600 dark:text-slate-400">Không tìm thấy văn bản nào</p>
-          </div>
-        ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {documents.map((doc) => (
-            <div
-              key={doc.documentId}
-              className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                  {doc.category || 'Chưa phân loại'}
-                </span>
-                <div
-                  className={`flex items-center gap-1 ${
-                    doc.status === "ACTIVE"
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                  title={doc.status === "ACTIVE" ? "Còn hiệu lực" : "Hết hiệu lực"}
-                >
-                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {doc.status === "ACTIVE" ? "check_circle" : "cancel"}
-                  </span>
-                  <span className="text-xs font-medium">
-                    {doc.status === "ACTIVE" ? "Còn hiệu lực" : "Hết hiệu lực"}
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 flex-grow leading-snug" style={{ fontFamily: "'Lora', serif" }}>
-                {doc.title}
-              </h3>
-
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                Ngày ban hành: {formatDate(doc.createdAt)}
-              </p>
-
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
-                  <span className="material-symbols-outlined text-base">visibility</span>
-                  <span>{(doc.viewCount || 0).toLocaleString()} lượt xem</span>
-                </div>
-                <Link
-                  to={`/legal-documents/${doc.documentId}`}
-                  className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Xem chi tiết
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-        <nav aria-label="Pagination" className="mt-8 flex items-center justify-center">
-          <ul className="flex items-center -space-x-px h-10 text-base">
-            <li>
-              <button 
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 0}
-                className="flex items-center justify-center px-4 h-10 ms-0 leading-tight text-slate-600 bg-white border border-e-0 border-slate-300 rounded-s-md hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                <span className="sr-only">Previous</span>
-                <span className="material-symbols-outlined">chevron_left</span>
-              </button>
-            </li>
-            {[...Array(Math.min(pagination.totalPages, 5))].map((_, idx) => {
-              let pageNum;
-              if (pagination.totalPages <= 5) {
-                pageNum = idx;
-              } else if (pagination.page < 3) {
-                pageNum = idx;
-              } else if (pagination.page > pagination.totalPages - 3) {
-                pageNum = pagination.totalPages - 5 + idx;
-              } else {
-                pageNum = pagination.page - 2 + idx;
-              }
-              return (
-                <li key={pageNum}>
-                  <button 
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`flex items-center justify-center px-4 h-10 leading-tight border ${
-                      pagination.page === pageNum
-                        ? 'z-10 text-white border-blue-600 bg-blue-600 hover:bg-blue-700'
-                        : 'text-slate-600 bg-white border-slate-300 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
-                    }`}
+            ) : (
+              <ul className="space-y-4">
+                {/* Chủ đề selector */}
+                <li className="mb-4">
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                    CHỌN CHỦ ĐỀ
+                  </label>
+                  <select
+                    className="w-full py-2 px-3 text-sm bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-600"
+                    value={selectedChuDe?.chuDeId || ''}
+                    onChange={(e) => {
+                      const chuDe = chuDeList.find(c => c.chuDeId === e.target.value);
+                      if (chuDe) loadChuDeTree(chuDe);
+                    }}
                   >
-                    {pageNum + 1}
-                  </button>
+                    {chuDeList.map((chuDe) => (
+                      <option key={chuDe.id} value={chuDe.chuDeId}>
+                        {chuDe.text}
+                      </option>
+                    ))}
+                  </select>
                 </li>
-              );
-            })}
-            <li>
-              <button 
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages - 1}
-                className="flex items-center justify-center px-4 h-10 leading-tight text-slate-600 bg-white border border-s-0 border-slate-300 rounded-e-md hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                <span className="sr-only">Next</span>
-                <span className="material-symbols-outlined">chevron_right</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
-        )}
+
+                {/* Tree */}
+                {filteredTree.map((deMuc) => (
+                  <li key={deMuc.id}>
+                    <div
+                      className="flex items-start space-x-2 font-semibold text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600"
+                      onClick={() => toggleNode(`demuc-${deMuc.id}`, 'demuc', deMuc)}
+                    >
+                      <span className="material-symbols-outlined text-base mt-0.5">
+                        {expandedNodes[`demuc-${deMuc.id}`] ? 'folder_open' : 'folder'}
+                      </span>
+                      <span>{deMuc.text}</span>
+                    </div>
+
+                    {expandedNodes[`demuc-${deMuc.id}`] && (
+                      <ul className="ml-2 mt-2 space-y-2 border-l border-gray-300 dark:border-slate-600 pl-4">
+                        {deMuc.chuongList?.length === 0 && loadedNodes[`demuc-${deMuc.id}`] === undefined && (
+                          <li className="text-gray-400 text-xs italic">Đang tải...</li>
+                        )}
+                        {deMuc.chuongList?.map((chuong) => (
+                          <li key={chuong.id}>
+                            <div
+                              className="flex items-start space-x-2 font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:text-blue-600"
+                              onClick={() => toggleNode(`chuong-${chuong.id}`, 'chuong', { deMucId: deMuc.id, chuong })}
+                            >
+                              <span className="material-symbols-outlined text-base mt-0.5 text-gray-500">
+                                {expandedNodes[`chuong-${chuong.id}`] ? 'folder_open' : 'folder'}
+                              </span>
+                              <span>{chuong.text}</span>
+                            </div>
+
+                            {expandedNodes[`chuong-${chuong.id}`] && (
+                              <ul className="ml-2 mt-2 space-y-2 border-l border-gray-300 dark:border-slate-600 pl-4">
+                                {/* Loading state */}
+                                {chuong.dieuList?.length === 0 && loadedNodes[`chuong-${chuong.id}`] === undefined && (
+                                  <li className="text-gray-400 text-xs italic">Đang tải...</li>
+                                )}
+                                
+                                {/* Hiển thị tất cả items */}
+                                {chuong.dieuList?.map((dieu) => (
+                                  <li key={dieu.id}>
+                                    <a
+                                      className={`flex items-center space-x-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 group cursor-pointer ${
+                                        selectedDieu?.id === dieu.id
+                                          ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                                          : 'text-gray-600 dark:text-gray-400'
+                                      }`}
+                                      onClick={() => handleDieuClick(dieu)}
+                                    >
+                                      <span className="material-symbols-outlined text-sm text-gray-400 group-hover:text-blue-600">
+                                        description
+                                      </span>
+                                      <span className="line-clamp-1">{dieu.tieuDe || dieu.text}</span>
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-black p-4 md:p-8 relative custom-scroll">
+          <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6 uppercase tracking-wide">
+            Văn Bản Pháp Luật
+          </h1>
+
+          <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 shadow-lg rounded-sm border border-gray-200 dark:border-slate-700 p-8 md:p-12 min-h-[800px]">
+            {selectedDieu ? (
+              <article className="leading-relaxed text-gray-800 dark:text-gray-200" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                {/* Header */}
+                <div className="text-center mb-8 space-y-2">
+                  <p className="font-bold text-lg uppercase">LUẬT</p>
+                  <h2 className="font-bold text-xl uppercase text-blue-700 dark:text-blue-400">
+                    {selectedChuDe?.text || 'VĂN BẢN PHÁP LUẬT'}
+                  </h2>
+                </div>
+
+                {/* Article Content */}
+                <div className="mb-6">
+                  <h4 className="font-bold text-orange-600 dark:text-orange-400 text-lg mb-4">
+                    {selectedDieu.tieuDe}
+                  </h4>
+
+                  {/* Nội dung */}
+                  {selectedDieu.noiDung && selectedDieu.noiDung.length > 0 && (
+                    <div className="space-y-4 text-justify text-base">
+                      {selectedDieu.noiDung.map((content, idx) => (
+                        <p key={idx}>{content}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Ghi chú */}
+                  {selectedDieu.ghiChu && selectedDieu.ghiChu.length > 0 && (
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-slate-800 rounded-md border-l-4 border-blue-500">
+                      <p className="font-semibold text-sm text-blue-700 dark:text-blue-400 mb-2">
+                        Ghi chú:
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        {selectedDieu.ghiChu.map((note, idx) => (
+                          <p key={idx}>
+                            {note.text}
+                            {note.link && (
+                              <a
+                                href={note.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-600 hover:underline"
+                              >
+                                [Xem thêm]
+                              </a>
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chỉ dẫn */}
+                  {selectedDieu.chiDan && selectedDieu.chiDan.length > 0 && (
+                    <div className="mt-6 p-4 bg-amber-50 dark:bg-slate-800 rounded-md border-l-4 border-amber-500">
+                      <p className="font-semibold text-sm text-amber-700 dark:text-amber-400 mb-2">
+                        Chỉ dẫn liên quan:
+                      </p>
+                      <div className="space-y-1 text-sm">
+                        {selectedDieu.chiDan.map((cd, idx) => (
+                          <div key={idx} className="flex items-start space-x-2">
+                            <span className="material-symbols-outlined text-xs mt-0.5 text-amber-600">
+                              arrow_forward
+                            </span>
+                            <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                              {cd.text || cd}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </article>
+            ) : (
+              <div className="text-center py-20 text-gray-500">
+                <span className="material-symbols-outlined text-6xl mb-4 text-gray-400">
+                  description
+                </span>
+                <p className="text-lg">Chọn một điều từ sidebar để xem nội dung</p>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center text-gray-500 text-sm mt-8 pb-4">
+            © 2026 LegalConnect. All rights reserved.
+          </div>
+        </main>
+
+        {/* AI Chatbot Button */}
+        <div className="fixed bottom-8 right-8 z-50 group">
+          <div className="absolute bottom-16 right-0 bg-white dark:bg-slate-800 p-3 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 w-64 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Chào bạn! Tôi là trợ lý AI pháp luật. Bạn cần giúp gì về văn bản này?
+            </p>
+          </div>
+          <button className="bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-full shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center w-14 h-14 border-2 border-white dark:border-slate-600">
+            <span className="material-symbols-outlined text-2xl">smart_toy</span>
+          </button>
+        </div>
       </div>
 
-      {/* AI Chat Popup */}
-      <div className="fixed bottom-6 right-6 z-[100]">
-        {showAIChat && (
-          <div
-            className="absolute bottom-[calc(100%+1rem)] right-0 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"
-            style={{ height: "60vh", maxHeight: "500px" }}
-          >
-            <div className="flex-shrink-0 flex items-center justify-between p-4 bg-blue-600 text-white border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined">smart_toy</span>
-                <h3 className="font-semibold text-lg" style={{ fontFamily: "'Lora', serif" }}>Trợ lý AI Pháp lý</h3>
-              </div>
-              <button onClick={() => setShowAIChat(false)} className="cursor-pointer">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto space-y-4">
-              {/* Chat messages will go here */}
-            </div>
-            <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <div className="relative">
-                <input
-                  className="w-full rounded-full border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 pl-4 pr-12 py-2.5 text-sm text-slate-900 dark:text-white focus:ring-blue-600 focus:border-blue-600"
-                  placeholder="Nhập câu hỏi của bạn..."
-                  type="text"
-                />
-                <button className="absolute inset-y-0 right-0 flex items-center justify-center h-full w-12 text-blue-600 hover:text-blue-700">
-                  <span className="material-symbols-outlined">send</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <button
-          onClick={() => setShowAIChat(!showAIChat)}
-          className="cursor-pointer w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-700 transition-transform hover:scale-105"
-        >
-          <span className="material-symbols-outlined text-3xl">smart_toy</span>
-        </button>
-      </div>
-      </div>
+      <style jsx>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 20px;
+        }
+        .dark .custom-scroll::-webkit-scrollbar-thumb {
+          background-color: #4b5563;
+        }
+      `}</style>
     </Layout>
-    </>
   );
 }

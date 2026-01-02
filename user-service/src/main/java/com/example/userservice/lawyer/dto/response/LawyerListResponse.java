@@ -25,6 +25,7 @@ public class LawyerListResponse {
     private VerificationStatus verificationStatus;
     private Integer yearsOfExp;
     private String bio;
+    private String officeAddress;
     private List<String> specializations;
     private LocalDateTime createdAt;
 }

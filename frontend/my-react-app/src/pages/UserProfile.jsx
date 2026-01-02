@@ -143,7 +143,7 @@ export default function UserProfile() {
 
   const fetchSpecializations = async () => {
     try {
-      const response = await axiosInstance.get("/api/specialization");
+      const response = await axiosInstance.get("/api/specializations");
       if (response.data.success) {
         console.log('Specializations data:', response.data.data);
         setSpecializations(response.data.data);

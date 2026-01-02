@@ -33,6 +33,10 @@ export default function FindLawyer() {
     averageRating: 0,
     satisfactionRate: 0,
   });
+  
+  // State for specialization dropdown
+  const [showSpecDropdown, setShowSpecDropdown] = useState(false);
+  const [specSearch, setSpecSearch] = useState("");
 
   // Fetch lawyers from API
   const fetchLawyers = async () => {
@@ -78,7 +82,7 @@ export default function FindLawyer() {
   // Fetch specializations
   const fetchSpecializations = async () => {
     try {
-      const response = await axiosInstance.get('/api/specialization');
+      const response = await axiosInstance.get('/api/specializations');
       if (response.data.success) {
         setSpecializations(response.data.data || []);
       }
@@ -247,7 +251,7 @@ export default function FindLawyer() {
             </div>
             <input
               className="form-input w-full flex-1 border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-0 text-base font-normal leading-normal"
-              placeholder="Tìm kiếm theo tên, chuyên ngành, công ty..."
+            
               value={filters.keyword}
               onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
             />
@@ -275,18 +279,119 @@ export default function FindLawyer() {
                 {/* Lĩnh vực */}
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-6">
                   <h3 className="text-base font-bold mb-3">Lĩnh vực</h3>
-                  <div className="space-y-3">
-                    {specializations.map((spec) => (
-                      <label key={spec.specId} className="flex items-center gap-x-3 cursor-pointer">
-                        <input
-                          className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 bg-transparent text-blue-600 focus:ring-blue-600/50"
-                          type="checkbox"
-                          checked={filters.specialties.includes(spec.specId)}
-                          onChange={() => handleSpecialtyChange(spec.specId)}
-                        />
-                        <p>{spec.specName}</p>
-                      </label>
-                    ))}
+                  
+                  {/* Dropdown Button */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSpecDropdown(!showSpecDropdown)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-left bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <span className="text-sm">
+                        {filters.specialties.length > 0
+                          ? `Đã chọn ${filters.specialties.length} lĩnh vực`
+                          : "Chọn lĩnh vực"}
+                      </span>
+                      <span className="material-symbols-outlined text-slate-500">
+                        {showSpecDropdown ? "expand_less" : "expand_more"}
+                      </span>
+                    </button>
+
+                    {/* Dropdown Panel */}
+                    {showSpecDropdown && (
+                      <div className="absolute z-10 mt-2 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                        {/* Search Box */}
+                        <div className="p-3 border-b border-slate-200 dark:border-slate-700">
+                          <div className="relative">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                              search
+                            </span>
+                            <input
+                              type="text"
+                              placeholder="Tìm lĩnh vực..."
+                              value={specSearch}
+                              onChange={(e) => setSpecSearch(e.target.value)}
+                              className="w-full pl-10 pr-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Selected Items */}
+                        {filters.specialties.length > 0 && (
+                          <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20">
+                            <div className="flex flex-wrap gap-2">
+                              {filters.specialties.map((specId) => {
+                                const spec = specializations.find(s => s.specId === specId);
+                                return spec ? (
+                                  <span
+                                    key={specId}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 text-xs rounded-full"
+                                  >
+                                    {spec.specName}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSpecialtyChange(specId);
+                                      }}
+                                      className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
+                                    >
+                                      <span className="material-symbols-outlined !text-sm">close</span>
+                                    </button>
+                                  </span>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Options List */}
+                        <div className="overflow-y-auto max-h-60">
+                          <div className="p-2">
+                            {specializations
+                              .filter(spec => 
+                                spec.specName.toLowerCase().includes(specSearch.toLowerCase())
+                              )
+                              .map((spec) => (
+                                <label
+                                  key={spec.specId}
+                                  className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md cursor-pointer transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                                    checked={filters.specialties.includes(spec.specId)}
+                                    onChange={() => handleSpecialtyChange(spec.specId)}
+                                  />
+                                  <span className="text-sm flex-1">{spec.specName}</span>
+                                </label>
+                              ))}
+                            
+                            {specializations.filter(spec => 
+                              spec.specName.toLowerCase().includes(specSearch.toLowerCase())
+                            ).length === 0 && (
+                              <div className="px-3 py-8 text-center text-slate-500 text-sm">
+                                Không tìm thấy lĩnh vực phù hợp
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFilters({ ...filters, specialties: [] });
+                              setSpecSearch("");
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                          >
+                            Xóa tất cả
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -441,14 +546,7 @@ export default function FindLawyer() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                            <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                              <span className="material-symbols-outlined">bookmark_border</span>
-                            </button>
-                            <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                              <span className="material-symbols-outlined">call</span>
-                            </button>
-                          </div>
+                          
                         </div>
 
                         <div className="text-sm text-slate-500 dark:text-slate-400 mt-3 space-y-1.5">

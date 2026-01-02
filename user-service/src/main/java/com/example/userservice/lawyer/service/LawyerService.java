@@ -118,7 +118,15 @@ public class LawyerService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        var spec = LawyerSpec.filter(request.getStatus(), request.getBarAssociationId(), request.getKeyword());
+        var spec = LawyerSpec.filter(
+            request.getStatus(), 
+            request.getBarAssociationId(), 
+            request.getKeyword(),
+            request.getSpecializationIds(),
+            request.getMinYearsOfExp(),
+            request.getMaxYearsOfExp(),
+            request.getMinRating()
+        );
 
         Page<Lawyer> lawyerPage = lawyerRepository.findAll(spec, pageable);
 
@@ -135,6 +143,7 @@ public class LawyerService {
                         .certificateUrl(lawyer.getCertificateImageUrl())
                         .yearsOfExp(lawyer.getYearsOfExp())
                         .bio(lawyer.getBio())
+                        .officeAddress(lawyer.getOfficeAddress())
                         .specializations(lawyer.getSpecializations().stream()
                                 .map(ls -> ls.getSpecialization().getSpecName())
                                 .toList())
