@@ -23,11 +23,19 @@ cd chat-service
 cd notification-service
 .\gradlew bootRun --args='--spring.profiles.active=dev'
 
-## BƯỚC 7: API GATEWAY (Terminal 6)
+## BƯỚC 7: SEARCH SERVICE (Terminal 6)
+cd search-service
+.\gradlew bootRun --args='--spring.profiles.active=dev'
+
+## BƯỚC 8: SCHEDULE SERVICE (Terminal 7)
+cd schedule-service
+.\gradlew bootRun --args='--spring.profiles.active=dev'
+
+## BƯỚC 9: API GATEWAY (Terminal 8)
 cd api-gateway
 .\gradlew bootRun --args='--spring.profiles.active=dev'
 
-## BƯỚC 8: FRONTEND (Terminal 7)
+## BƯỚC 10: FRONTEND (Terminal 9)
 cd frontend/my-react-app
 npm run dev
 

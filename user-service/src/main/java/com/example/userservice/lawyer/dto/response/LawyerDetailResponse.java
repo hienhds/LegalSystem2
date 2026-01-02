@@ -17,6 +17,7 @@ public class LawyerDetailResponse {
     private String email;
     private String phoneNumber;
     private String avatarUrl;
+    private String address;
 
     private String barLicenseId;
     private String bio;
@@ -24,6 +25,7 @@ public class LawyerDetailResponse {
     private String officeAddress;
     private int yearsOfExp;
 
+    private Long barAssociationId;
     private String barAssociationName;
     private VerificationStatus verificationStatus;
 

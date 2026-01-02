@@ -30,6 +30,7 @@ public class PasswordResetToken {
     private Instant expiredAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean used = false;
 
     @CreationTimestamp

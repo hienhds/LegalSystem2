@@ -1,0 +1,297 @@
+{
+  "info": {
+    "name": "Document Service API Collection",
+    "description": "Complete API collection for Document Service (Port 8087)\n\nIncludes:\n- Legal Document Structure (Chủ đề, Đề mục, Chương, Điều, Chỉ dẫn)\n- Tree Navigation\n\n**Usage:**\n1. Login from User Service to get token\n2. Navigate document hierarchy: Chủ đề → Đề mục → Chương → Điều\n3. Use resolve endpoint to get specific article (Điều) content",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8087",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chuDeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deMucId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chuongId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dieuId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication (User Service)",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "        console.log('Saved tokens and userId');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/login",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login to get access token from User Service"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Document Structure",
+      "item": [
+        {
+          "name": "Get All Chủ Đề (Topics)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.collectionVariables.set('chuDeId', jsonData[0].id);",
+                  "        console.log('Saved chuDeId:', jsonData[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chu-de",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chu-de"]
+            },
+            "description": "Get list of all legal document topics (Chủ đề)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Đề Mục by Chủ Đề",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.collectionVariables.set('deMucId', jsonData[0].id);",
+                  "        console.log('Saved deMucId:', jsonData[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/de-muc/chu-de/{{chuDeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "de-muc", "chu-de", "{{chuDeId}}"]
+            },
+            "description": "Get categories (Đề mục) under a topic (Chủ đề)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Chương by Đề Mục",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.collectionVariables.set('chuongId', jsonData[0].id);",
+                  "        console.log('Saved chuongId:', jsonData[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chuong/de-muc/{{deMucId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chuong", "de-muc", "{{deMucId}}"]
+            },
+            "description": "Get chapters (Chương) under a category (Đề mục)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Điều by Chương",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.collectionVariables.set('dieuId', jsonData[0].id);",
+                  "        console.log('Saved dieuId:', jsonData[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dieu/chuong/{{chuongId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dieu", "chuong", "{{chuongId}}"]
+            },
+            "description": "Get articles (Điều) under a chapter (Chương)"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Chỉ Dẫn (Article Content)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chi-dan/resolve?chuDeId={{chuDeId}}&deMucId={{deMucId}}&chuongId={{chuongId}}&dieuId={{dieuId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chi-dan", "resolve"],
+              "query": [
+                {
+                  "key": "chuDeId",
+                  "value": "{{chuDeId}}"
+                },
+                {
+                  "key": "deMucId",
+                  "value": "{{deMucId}}"
+                },
+                {
+                  "key": "chuongId",
+                  "value": "{{chuongId}}"
+                },
+                {
+                  "key": "dieuId",
+                  "value": "{{dieuId}}"
+                }
+              ]
+            },
+            "description": "Get full content and guidance (Chỉ dẫn) for a specific article"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Tree Navigation",
+      "item": [
+        {
+          "name": "Get Tree Structure by Chủ Đề",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tree/chu-de/{{chuDeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tree", "chu-de", "{{chuDeId}}"]
+            },
+            "description": "Get complete tree structure for a topic (includes all Đề mục, Chương, Điều)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

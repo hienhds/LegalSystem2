@@ -3,16 +3,22 @@ package com.example.userservice.user.controller;
 import com.example.userservice.common.dto.ApiResponse;
 import com.example.userservice.common.security.CustomUserDetails;
 import com.example.userservice.common.service.UploadImageService;
+import com.example.userservice.lawyer.dto.request.LawyerRequest;
+import com.example.userservice.lawyer.dto.response.LawyerResponse;
+import com.example.userservice.lawyer.service.LawyerService;
 import com.example.userservice.user.dto.UserProfileUpdateRequest;
 import com.example.userservice.user.dto.UserResponse;
 import com.example.userservice.user.dto.UserSummary;
 import com.example.userservice.user.entity.User;
 import com.example.userservice.user.repository.UserRepository;
 import com.example.userservice.user.service.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +37,7 @@ public class UserController {
     private final UserService userService;
     private final UploadImageService uploadImageService;
     private final UserRepository userRepository;
+    private final LawyerService lawyerService;
 
     @GetMapping("/internal/ids")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByIds(@RequestParam("ids") List<Long> ids) {
@@ -79,14 +86,27 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserProfile(
+    public ResponseEntity<ApiResponse<Object>> getCurrentUserProfile(
             HttpServletRequest httpRequest,
             @AuthenticationPrincipal CustomUserDetails user) {
 
         Long userId = user.getUser().getUserId();
-        UserResponse profileData = userService.getUserById(userId);
+        
+        // Check if user is a lawyer
+        boolean isLawyer = user.getUser().getUserRoles().stream()
+                .anyMatch(ur -> ur.getRole() != null && 
+                        "LAWYER".equalsIgnoreCase(ur.getRole().getRoleName()));
+        
+        Object profileData;
+        if (isLawyer && user.getUser().getLawyer() != null) {
+            // Return lawyer profile with full details
+            profileData = lawyerService.getDetail(userId);
+        } else {
+            // Return basic user profile
+            profileData = userService.getUserById(userId);
+        }
 
-        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(true)
                 .status(HttpStatus.OK.value())
                 .message("Lấy thông tin hồ sơ thành công")
@@ -157,5 +177,32 @@ public class UserController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/register-lawyer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<LawyerResponse>> registerAsLawyer(
+            @RequestParam("data") String data,
+            @RequestParam("certificate") MultipartFile file,
+            HttpServletRequest servletRequest,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        LawyerRequest request = mapper.readValue(data, LawyerRequest.class);
+
+        Long userId = user.getUser().getUserId();
+        String certificateUrl = uploadImageService.uploadImage(userId, file, "certificates");
+        LawyerResponse lawyerResponse = lawyerService.requestUpgrade(request, userId, certificateUrl);
+
+        ApiResponse<LawyerResponse> response = ApiResponse.<LawyerResponse>builder()
+                .success(true)
+                .status(HttpStatus.CREATED.value())
+                .message("Đăng ký trở thành luật sư thành công, vui lòng chờ phê duyệt")
+                .data(lawyerResponse)
+                .path(servletRequest.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

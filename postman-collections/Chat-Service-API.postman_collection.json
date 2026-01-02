@@ -1,0 +1,458 @@
+{
+  "info": {
+    "name": "Chat Service API Collection",
+    "description": "Complete API collection for Chat Service (Port 8084)\n\nIncludes:\n- Conversation Management (Create, List, Avatar)\n- Message Management (Send Text/File, Load Messages, File Preview/Download)\n- Member Management (Add, Remove, Leave)\n- Invite Management (Accept, Decline, List)\n\n**Usage:**\n1. Login from User Service to get token\n2. Use token for all chat requests\n3. Conversations use MongoDB ObjectId format",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inviteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fileId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication (User Service)",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "        console.log('Saved tokens and userId');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/login",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login to get access token from User Service"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Conversation Management",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.conversationId) {",
+                  "        pm.collectionVariables.set('conversationId', jsonData.data.conversationId);",
+                  "        console.log('Saved conversationId:', jsonData.data.conversationId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nhóm Chat Luật Sư\",\n  \"memberIds\": [2, 3, 4],\n  \"isGroup\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations"]
+            },
+            "description": "Create new conversation (1-1 or group chat)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations"]
+            },
+            "description": "Get all conversations for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Avatar Presigned URL",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/avatar?fileName=avatar.jpg&contentType=image/jpeg&fileSize=102400",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "avatar"],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "avatar.jpg"
+                },
+                {
+                  "key": "contentType",
+                  "value": "image/jpeg"
+                },
+                {
+                  "key": "fileSize",
+                  "value": "102400"
+                }
+              ]
+            },
+            "description": "Generate presigned URL to upload conversation avatar"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Message Management",
+      "item": [
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/messages?limit=20&cursor=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "messages"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "Pagination cursor for older messages"
+                }
+              ]
+            },
+            "description": "Get messages in conversation with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Conversation Files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/files?limit=20&cursor=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "files"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "cursor",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get all files shared in conversation"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Text Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Xin chào, tôi cần tư vấn về hợp đồng\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/messages/text",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "messages", "text"]
+            },
+            "description": "Send text message to conversation"
+          },
+          "response": []
+        },
+        {
+          "name": "Send File Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileId\": \"file-id-from-minio\",\n  \"fileName\": \"contract.pdf\",\n  \"fileUrl\": \"https://minio/bucket/file-id\",\n  \"fileSize\": 204800,\n  \"fileType\": \"application/pdf\",\n  \"caption\": \"Hợp đồng cần xem xét\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/messages/file",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "messages", "file"]
+            },
+            "description": "Send file message after uploading to MinIO"
+          },
+          "response": []
+        },
+        {
+          "name": "Preview File",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/messages/files/{{fileId}}/preview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "messages", "files", "{{fileId}}", "preview"]
+            },
+            "description": "Get presigned URL to preview file"
+          },
+          "response": []
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/messages/files/{{fileId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "messages", "files", "{{fileId}}", "download"]
+            },
+            "description": "Get presigned URL to download file"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Member Management",
+      "item": [
+        {
+          "name": "Get Conversation Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "members"]
+            },
+            "description": "Get all members of a conversation"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Members",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberIds\": [5, 6, 7]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "members"]
+            },
+            "description": "Add new members to conversation"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Members",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberIds\": [5, 6]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "members"]
+            },
+            "description": "Remove members from conversation"
+          },
+          "response": []
+        },
+        {
+          "name": "Leave Conversation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/{{conversationId}}/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "{{conversationId}}", "leave"]
+            },
+            "description": "Current user leaves the conversation"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Invite Management",
+      "item": [
+        {
+          "name": "Get Pending Invites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/invites",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "invites"]
+            },
+            "description": "Get all pending invitations for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Invite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/invites/{{inviteId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "invites", "{{inviteId}}", "accept"]
+            },
+            "description": "Accept conversation invitation"
+          },
+          "response": []
+        },
+        {
+          "name": "Decline Invite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat-room/conversations/invites/{{inviteId}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat-room", "conversations", "invites", "{{inviteId}}", "decline"]
+            },
+            "description": "Decline conversation invitation"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

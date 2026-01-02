@@ -29,6 +29,7 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
+@Builder
 public class User implements Serializable {
 
 
@@ -102,8 +103,8 @@ public class User implements Serializable {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Lawyer lawyer;
 
-    public User(){
-
+    public User() {
+        // Default constructor
     }
     
     // Helper method for admin management

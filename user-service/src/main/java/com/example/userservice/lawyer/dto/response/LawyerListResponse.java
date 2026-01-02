@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Setter
 @Getter
 @Builder
@@ -20,4 +23,8 @@ public class LawyerListResponse {
     private String barLicenseId;
     private String certificateUrl;
     private VerificationStatus verificationStatus;
+    private Integer yearsOfExp;
+    private String bio;
+    private List<String> specializations;
+    private LocalDateTime createdAt;
 }

@@ -12,8 +12,9 @@ export default function Home() {
   useEffect(() => { 
     setLoading(true);
     Promise.all([
+      // Get popular lawyers from search service
       apiFetch("http://localhost:8080/api/search/popular-lawyers?limit=6").then(res => res.json()).catch(() => ({ data: [] })),
-      apiFetch("http://localhost:8080/api/documents/trending?page=0&size=5").then(res => res.json()).catch(() => ({ data: { content: [] } }))
+     
     ]).then(([lawyersData, newsData]) => {
       console.log('Luật sư nổi bật:', lawyersData);
       console.log('Tin pháp luật:', newsData);
@@ -112,7 +113,7 @@ export default function Home() {
                       src={lawyer.avatarUrl
                         ? (lawyer.avatarUrl.startsWith('http')
                             ? lawyer.avatarUrl
-                            : `http://localhost:8080${lawyer.avatarUrl}`)
+                            : `http://localhost:8080${lawyer.avatarUrl.startsWith('/') ? '' : '/'}${lawyer.avatarUrl}`)
                         : "https://via.placeholder.com/400x224?text=Avatar"}
                     />
                     <div className="p-6">

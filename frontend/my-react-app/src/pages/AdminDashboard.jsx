@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   });
   
   const [loading, setLoading] = useState(true);
-  const [registrationDays, setRegistrationDays] = useState(7);
+  const [registrationPeriod, setRegistrationPeriod] = useState("WEEKLY");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
         // Fetch all data in parallel
         const [statsRes, registrationsRes, verificationRes] = await Promise.all([
           axios.get("http://localhost:8080/api/admin/dashboard/stats", config),
-          axios.get(`http://localhost:8080/api/admin/dashboard/registrations?days=${registrationDays}`, config),
+          axios.get(`http://localhost:8080/api/admin/dashboard/registrations?period=${registrationPeriod}`, config),
           axios.get("http://localhost:8080/api/admin/dashboard/lawyer-verification-status", config),
         ]);
 
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
     };
     
     fetchDashboardData();
-  }, [registrationDays]);
+  }, [registrationPeriod]);
 
   const formatGrowth = (growth) => {
     if (growth === null || growth === undefined) return "N/A";
@@ -121,24 +121,24 @@ export default function AdminDashboard() {
             <h1 className="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Tổng quan</h1>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setRegistrationDays(7)}
+                onClick={() => setRegistrationPeriod("WEEKLY")}
                 className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
-                  registrationDays === 7 
+                  registrationPeriod === "WEEKLY" 
                     ? 'bg-primary text-white' 
                     : 'bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <p className="text-sm font-medium">7 ngày</p>
+                <p className="text-sm font-medium">Tuần</p>
               </button>
               <button 
-                onClick={() => setRegistrationDays(30)}
+                onClick={() => setRegistrationPeriod("MONTHLY")}
                 className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
-                  registrationDays === 30 
+                  registrationPeriod === "MONTHLY" 
                     ? 'bg-primary text-white' 
                     : 'bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <p className="text-sm font-medium">30 ngày</p>
+                <p className="text-sm font-medium">Tháng</p>
               </button>
               <button className="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary text-white pl-4 pr-3 hover:bg-primary/90">
                 <p className="text-sm font-medium">Làm mới</p>
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-slate-900 dark:text-white text-base font-medium">Lượt đăng ký mới</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">Trong {registrationDays} ngày qua</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">{registrationPeriod === 'WEEKLY' ? 'Trong tuần qua' : 'Trong tháng qua'}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -232,8 +232,8 @@ export default function AdminDashboard() {
                 {/* X-axis labels */}
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-3 px-1">
                   {registrations.length > 0 && registrations.map((r, i) => {
-                    // Show all labels for 7 days, show every 5th for 30 days
-                    const shouldShow = registrationDays === 7 || i % 5 === 0 || i === registrations.length - 1;
+                    // Show all labels for weekly, show every 5th for monthly
+                    const shouldShow = registrationPeriod === 'WEEKLY' || i % 5 === 0 || i === registrations.length - 1;
                     return (
                       <span 
                         key={i} 

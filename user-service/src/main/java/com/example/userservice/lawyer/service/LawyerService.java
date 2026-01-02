@@ -133,6 +133,12 @@ public class LawyerService {
                         .barAssociationName(lawyer.getBarAssociation().getAssociationName())
                         .verificationStatus(lawyer.getVerificationStatus())
                         .certificateUrl(lawyer.getCertificateImageUrl())
+                        .yearsOfExp(lawyer.getYearsOfExp())
+                        .bio(lawyer.getBio())
+                        .specializations(lawyer.getSpecializations().stream()
+                                .map(ls -> ls.getSpecialization().getSpecName())
+                                .toList())
+                        .createdAt(lawyer.getCreatedAt())
                         .build()
         );
 
@@ -149,6 +155,7 @@ public class LawyerService {
                 .email(lawyer.getUser().getEmail())
                 .phoneNumber(lawyer.getUser().getPhoneNumber())
                 .avatarUrl(lawyer.getUser().getAvatarUrl())
+                .address(lawyer.getUser().getAddress())
 
                 .barLicenseId(lawyer.getBarLicenseId())
                 .bio(lawyer.getBio())
@@ -156,6 +163,7 @@ public class LawyerService {
                 .officeAddress(lawyer.getOfficeAddress())
                 .yearsOfExp(lawyer.getYearsOfExp())
 
+                .barAssociationId(lawyer.getBarAssociation().getBarAssociationId())
                 .barAssociationName(lawyer.getBarAssociation().getAssociationName())
                 .verificationStatus(lawyer.getVerificationStatus())
 
@@ -359,6 +367,12 @@ public class LawyerService {
                 .barLicenseId(lawyer.getBarLicenseId())
                 .certificateUrl(lawyer.getCertificateImageUrl())
                 .verificationStatus(lawyer.getVerificationStatus())
+                .yearsOfExp(lawyer.getYearsOfExp())
+                .bio(lawyer.getBio())
+                .specializations(lawyer.getSpecializations().stream()
+                        .map(ls -> ls.getSpecialization().getSpecName())
+                        .toList())
+                .createdAt(lawyer.getCreatedAt())
                 .build();
     }
 
