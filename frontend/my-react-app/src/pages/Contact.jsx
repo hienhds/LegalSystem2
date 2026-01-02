@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { apiFetch } from "../utils/api";
 import useUserProfile from "../hooks/useUserProfile";
@@ -7,7 +9,12 @@ import "./Contact.css";
 
 export default function Contact() {
   const { user, loading: userLoading } = useUserProfile();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
@@ -20,6 +27,29 @@ export default function Contact() {
   const imageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const lastHandledLawyerId = useRef(null);
+  const lastClearedConversationId = useRef(null);
+  
+  // Derive filteredConversations from conversations and searchQuery
+  const filteredConversations = React.useMemo(() => {
+    if (!searchQuery.trim()) {
+      return conversations;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return conversations.filter(conv => {
+      const otherUser = conv.otherUser;
+      const name = otherUser?.fullName || otherUser?.name || '';
+      const email = otherUser?.email || '';
+      const phone = otherUser?.phoneNumber || '';
+      const lastMsg = conv.lastMessage?.content || '';
+
+      return name.toLowerCase().includes(query) ||
+             email.toLowerCase().includes(query) ||
+             phone.includes(query) ||
+             lastMsg.toLowerCase().includes(query);
+    });
+  }, [conversations, searchQuery]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
@@ -87,7 +117,8 @@ export default function Contact() {
       const actualUserId = user.userId || user.lawyerId;
       
       if (actualUserId) {
-        loadConversations();
+        // Pass location.state to loadConversations to prevent auto-selecting
+        loadConversations(location.state);
       } else {
         setLoading(false);
       }
@@ -97,27 +128,122 @@ export default function Contact() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLoading, user]);
 
+  // Handle navigation from FindLawyer page
+  useEffect(() => {
+    console.log('📍 Location state:', location.state);
+    console.log('👤 User:', user);
+    console.log('💬 Conversations:', conversations.length);
+    console.log('⏳ Loading:', loading);
+    
+    // Wait for conversations to load first
+    if (location.state?.selectedLawyer && user && !loading) {
+      const lawyer = location.state.selectedLawyer;
+      console.log('🎯 Selected lawyer:', lawyer);
+      
+      // Check if this is a new lawyer (not already handled)
+      if (lastHandledLawyerId.current === lawyer.lawyerId) {
+        console.log('⚠️ Already handled this lawyer:', lawyer.lawyerId);
+        return; // Already handled this lawyer
+      }
+      
+      // Mark this lawyer as handled
+      lastHandledLawyerId.current = lawyer.lawyerId;
+      console.log('✅ Handling new lawyer:', lawyer.lawyerId);
+      
+      // Clear location state using navigate (React Router way)
+      navigate('/contact', { replace: true, state: {} });
+      
+      // Check if conversation already exists (now that conversations are loaded)
+      const existingConv = conversations.find(conv => 
+        conv.otherUser?.lawyerId === lawyer.lawyerId
+      );
+      
+      if (existingConv) {
+        // Select existing conversation
+        console.log('📌 Found existing conversation:', existingConv.conversationId);
+        setSelectedConversation(existingConv);
+      } else {
+        // Create temporary conversation only if not exists
+        const tempConv = {
+          conversationId: `temp_${Date.now()}`,
+          otherUser: lawyer,
+          lastMessage: null,
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: 0
+        };
+        
+        console.log('🆕 Creating temp conversation:', tempConv.conversationId);
+        setConversations(prev => [tempConv, ...prev]);
+        setSelectedConversation(tempConv);
+        console.log('✅ Selected conversation set to:', tempConv.conversationId, tempConv.otherUser?.fullName);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, user, navigate, loading]);
+
   // Load messages when conversation is selected
   useEffect(() => {
     if (selectedConversation) {
       setMessages([]);
       setCurrentPage(0);
       setHasMoreMessages(true);
-      loadMessages(selectedConversation.conversationId, 0, false);
       
-      // Backup polling: Check for new messages every 15 seconds
-      // This is primarily a backup for when WebSocket is disconnected
-      const pollingInterval = setInterval(() => {
-        // Only poll if tab is visible
-        if (!document.hidden) {
-          checkForNewMessages();
-        }
-      }, 15000);
+      // Don't load messages for temporary conversations (not yet created in backend)
+      const isTempConversation = String(selectedConversation.conversationId).startsWith('temp_');
       
-      return () => clearInterval(pollingInterval);
+      if (!isTempConversation) {
+        loadMessages(selectedConversation.conversationId, 0, false);
+        
+        // Backup polling: Check for new messages every 15 seconds
+        // This is primarily a backup for when WebSocket is disconnected
+        const pollingInterval = setInterval(() => {
+          // Only poll if tab is visible
+          if (!document.hidden) {
+            checkForNewMessages();
+          }
+        }, 15000);
+        
+        return () => clearInterval(pollingInterval);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation?.conversationId]);
+
+  // Search lawyers via API with debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Search for new lawyers via API (existing conversation filtering is handled by useMemo)
+    const searchTimeout = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await apiFetch(
+          `http://localhost:8080/api/search/lawyers?keyword=${encodeURIComponent(searchQuery)}&page=0&size=5`
+        );
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          const lawyers = data.data.content || [];
+          // Filter out lawyers who already have conversations
+          const existingUserIds = new Set(
+            conversations.map(conv => conv.otherUser?.userId || conv.otherUser?.lawyerId)
+          );
+          const newLawyers = lawyers.filter(lawyer => !existingUserIds.has(lawyer.lawyerId));
+          setSearchResults(newLawyers);
+        }
+      } catch (error) {
+        console.error("Error searching lawyers:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery, conversations]);
 
   // Handle tab visibility change - check for new messages when tab becomes active
   useEffect(() => {
@@ -142,9 +268,23 @@ export default function Contact() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation]);
 
+  // Auto-clear search when a conversation is selected (only once per conversation)
+  useEffect(() => {
+    if (selectedConversation && selectedConversation.conversationId !== lastClearedConversationId.current) {
+      console.log('🧹 Auto-clearing search because conversation is selected');
+      lastClearedConversationId.current = selectedConversation.conversationId;
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  }, [selectedConversation]);
+
   // Check for new messages (lightweight polling)
   const checkForNewMessages = async () => {
     if (!selectedConversation || messages.length === 0) return;
+    
+    // Don't check for temp conversations
+    const isTempConversation = String(selectedConversation.conversationId).startsWith('temp_');
+    if (isTempConversation) return;
     
     try {
       const lastMessage = messages[messages.length - 1];
@@ -172,6 +312,61 @@ export default function Contact() {
     }
   };
 
+  // Create or open conversation with a lawyer
+  const startConversationWithLawyer = async (lawyer) => {
+    try {
+      console.log('🎯 Starting conversation with lawyer:', lawyer.fullName);
+      const currentUserId = user?.userId || user?.lawyerId;
+      if (!currentUserId) {
+        console.log('❌ No current user ID');
+        return;
+      }
+
+      // Check if conversation already exists
+      const existingConv = conversations.find(
+        conv => (conv.otherUser?.userId === lawyer.lawyerId || conv.otherUser?.lawyerId === lawyer.lawyerId)
+      );
+
+      if (existingConv) {
+        // Just select the existing conversation
+        console.log('📌 Found existing conversation:', existingConv.conversationId);
+        setSelectedConversation(existingConv);
+        // Don't clear search - let it clear naturally or user can clear
+        console.log('✅ Selected existing conversation');
+        return;
+      }
+
+      // Create new conversation by sending first message
+      // For now, just create a placeholder conversation object
+      const newConv = {
+        conversationId: `temp_${Date.now()}`, // Temporary ID
+        otherUser: {
+          userId: lawyer.lawyerId,
+          lawyerId: lawyer.lawyerId,
+          fullName: lawyer.fullName,
+          avatarUrl: lawyer.avatarUrl,
+          email: lawyer.email,
+          phoneNumber: lawyer.phoneNumber,
+          userType: 'LAWYER'
+        },
+        lastMessage: null,
+        unreadCount: 0
+      };
+
+      console.log('🆕 Creating new temp conversation:', newConv.conversationId);
+      
+      // Add to conversations and select it
+      setConversations(prev => [newConv, ...prev]);
+      setSelectedConversation(newConv);
+      
+      console.log('✅ Conversation created and selected:', newConv.conversationId);
+
+      // The actual conversation will be created when user sends first message
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+    }
+  };
+
   // Scroll listener for infinite scroll
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -189,7 +384,7 @@ export default function Contact() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingMore, hasMoreMessages, selectedConversation]);
 
-  const loadConversations = async () => {
+  const loadConversations = async (locationState = null) => {
     try {
       // Get the actual user ID - could be userId or lawyerId
       const actualUserId = user?.userId || user?.lawyerId;
@@ -217,10 +412,23 @@ export default function Contact() {
           }
         }));
         
-        setConversations(mappedConversations);
-        // Auto-select first conversation
-        if (mappedConversations.length > 0) {
+        // Merge with existing temp conversations (preserve temp conversations)
+        setConversations(prev => {
+          const tempConvs = prev.filter(c => String(c.conversationId).startsWith('temp_'));
+          console.log('🔄 Merging conversations - Temp:', tempConvs.length, 'Backend:', mappedConversations.length);
+          return [...tempConvs, ...mappedConversations];
+        });
+        
+        // Auto-select first conversation only if:
+        // 1. Nothing is currently selected
+        // 2. Not navigating from FindLawyer (no location.state with selectedLawyer)
+        // 3. There are conversations available
+        const hasLocationState = locationState && locationState.selectedLawyer;
+        if (!selectedConversation && !hasLocationState && mappedConversations.length > 0) {
+          console.log('🔄 Auto-selecting first conversation:', mappedConversations[0].conversationId);
           setSelectedConversation(mappedConversations[0]);
+        } else {
+          console.log('✅ Keeping current selectedConversation:', selectedConversation?.conversationId, 'hasLocationState:', hasLocationState);
         }
       }
     } catch (error) {
@@ -270,6 +478,10 @@ export default function Contact() {
   const loadMoreMessages = async () => {
     if (!selectedConversation || loadingMore || !hasMoreMessages) return;
     
+    // Don't load more for temp conversations
+    const isTempConversation = String(selectedConversation.conversationId).startsWith('temp_');
+    if (isTempConversation) return;
+    
     setLoadingMore(true);
     const nextPage = currentPage + 1;
     
@@ -290,6 +502,10 @@ export default function Contact() {
   };
 
   const markAsRead = async (conversationId) => {
+    // Don't mark as read for temp conversations
+    const isTempConversation = String(conversationId).startsWith('temp_');
+    if (isTempConversation) return;
+    
     try {
       const actualUserId = user?.userId || user?.lawyerId;
       if (!actualUserId) return;
@@ -329,14 +545,50 @@ export default function Contact() {
     // Clear inputs immediately for better UX
     const currentMessage = messageInput;
     const currentFile = selectedFile;
+    const wasTemporaryConversation = String(selectedConversation.conversationId).startsWith('temp_');
     setMessageInput("");
     clearSelectedFile();
 
     try {
+      let conversationId = selectedConversation.conversationId;
+      
+      // If this is a new conversation (temp ID), create it first
+      if (wasTemporaryConversation) {
+        const createConvResponse = await apiFetch(
+          'http://localhost:8080/api/chat/conversations',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId1: actualUserId,
+              userId2: selectedConversation.otherUser.lawyerId,
+              userType1: user.lawyerId ? "LAWYER" : "CITIZEN",
+              userType2: "LAWYER"
+            })
+          }
+        );
+        
+        const convData = await createConvResponse.json();
+        if (convData.success && convData.data) {
+          conversationId = convData.data.conversationId;
+          // Update the selected conversation with real ID
+          const updatedConv = { ...selectedConversation, conversationId };
+          setSelectedConversation(updatedConv);
+          setConversations(prev => 
+            prev.map(c => c.conversationId === selectedConversation.conversationId ? updatedConv : c)
+          );
+        } else {
+          setMessageInput(currentMessage);
+          setSelectedFile(currentFile);
+          alert('Không thể tạo cuộc trò chuyện!');
+          return;
+        }
+      }
+
       // If there's a file, send as FormData
       if (currentFile) {
         const formData = new FormData();
-        formData.append('conversationId', selectedConversation.conversationId);
+        formData.append('conversationId', conversationId);
         formData.append('senderId', actualUserId);
         formData.append('senderType', user.lawyerId ? "LAWYER" : "CITIZEN");
         formData.append('content', currentMessage || 'Đã gửi file');
@@ -353,7 +605,11 @@ export default function Contact() {
         
         const data = await response.json();
         if (data.success) {
-          loadConversations();
+          // If this was a temp conversation, reload to get real conversation from backend
+          if (wasTemporaryConversation) {
+            await loadConversations();
+            loadMessages(conversationId, 0, false);
+          }
         } else {
           setMessageInput(currentMessage);
           setSelectedFile(currentFile);
@@ -362,7 +618,7 @@ export default function Contact() {
       } else {
         // Send text message
         const messageData = {
-          conversationId: selectedConversation.conversationId,
+          conversationId: conversationId,
           senderId: actualUserId,
           senderType: user.lawyerId ? "LAWYER" : "CITIZEN",
           content: currentMessage,
@@ -380,7 +636,11 @@ export default function Contact() {
         
         const data = await response.json();
         if (data.success) {
-          loadConversations();
+          // If this was a temp conversation, reload to get real conversation from backend
+          if (wasTemporaryConversation) {
+            await loadConversations();
+            loadMessages(conversationId, 0, false);
+          }
         } else {
           setMessageInput(currentMessage);
         }
@@ -502,17 +762,92 @@ export default function Contact() {
             <h1 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">Trò chuyện</h1>
             <div className="relative mt-4">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark">search</span>
-              <input className="w-full bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded-full py-2 pl-10 pr-4 focus:ring-primary focus:border-primary" placeholder="Tìm kiếm trong LegalConnect" type="text" />
+              <input 
+                className="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-full py-2 pl-10 pr-4 focus:ring-2 focus:ring-primary focus:border-primary" 
+                placeholder="Tìm kiếm theo tên, email, SĐT..." 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
           <nav className="flex-1 overflow-y-auto">
-            {conversations.length === 0 ? (
+            {/* Search results for new lawyers */}
+            {searchQuery && searchResults.length > 0 && (
+              <div className="border-b border-border-light dark:border-border-dark">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase px-2">
+                    Luật sư khác ({searchResults.length})
+                  </p>
+                </div>
+                <ul>
+                  {searchResults.map(lawyer => (
+                    <li 
+                      key={`lawyer_${lawyer.lawyerId}`}
+                      className="flex items-center p-3 space-x-3 cursor-pointer hover:bg-hover-light dark:hover:bg-hover-dark transition-colors mx-1"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        startConversationWithLawyer(lawyer);
+                      }}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <img 
+                          alt={lawyer.fullName} 
+                          className="w-14 h-14 rounded-full object-cover bg-gray-200" 
+                          src={lawyer.avatarUrl ? `http://localhost:8080${lawyer.avatarUrl}` : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23ddd" width="150" height="150"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="48"%3E?%3C/text%3E%3C/svg%3E'} 
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-text-primary-light dark:text-text-primary-dark truncate">
+                            {lawyer.fullName}
+                          </p>
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                            Luật sư
+                          </span>
+                        </div>
+                        <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark truncate">
+                          {lawyer.specializations?.join(', ') || 'Luật sư'}
+                        </p>
+                        {lawyer.email && (
+                          <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">
+                            {lawyer.email}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Loading indicator */}
+            {isSearching && (
+              <div className="p-4 text-center">
+                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                  Đang tìm kiếm...
+                </p>
+              </div>
+            )}
+
+            {/* Existing conversations */}
+            {searchQuery && filteredConversations.length > 0 && (
+              <div className="p-2 bg-gray-100 dark:bg-gray-800">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase px-2">
+                  Cuộc trò chuyện ({filteredConversations.length})
+                </p>
+              </div>
+            )}
+            
+            {filteredConversations.length === 0 && !searchQuery ? (
               <div className="p-4 text-center text-slate-500">
                 Chưa có cuộc trò chuyện nào
               </div>
             ) : (
               <ul>
-                {conversations.map(conv => (
+                {filteredConversations.map(conv => (
                   <li 
                     key={conv.conversationId}
                     className={`flex items-center p-3 space-x-3 cursor-pointer ${
@@ -675,14 +1010,78 @@ export default function Contact() {
                             {/* Display file info if it's not an image */}
                             {msg.fileUrl && !isImage && (
                               <div className="mt-2 flex items-center gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 min-w-[280px]">
-                                {/* PDF Icon */}
-                                <div className="flex-shrink-0 w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                  PDF
-                                </div>
+                                {/* File Icon based on type */}
+                                {(() => {
+                                  const fileName = msg.fileName || '';
+                                  const ext = fileName.split('.').pop()?.toLowerCase();
+                                  
+                                  // PDF files
+                                  if (ext === 'pdf') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        PDF
+                                      </div>
+                                    );
+                                  }
+                                  // Word documents
+                                  if (ext === 'doc' || ext === 'docx') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        DOC
+                                      </div>
+                                    );
+                                  }
+                                  // Excel files
+                                  if (ext === 'xls' || ext === 'xlsx') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        XLS
+                                      </div>
+                                    );
+                                  }
+                                  // PowerPoint files
+                                  if (ext === 'ppt' || ext === 'pptx') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        PPT
+                                      </div>
+                                    );
+                                  }
+                                  // ZIP/RAR archives
+                                  if (ext === 'zip' || ext === 'rar' || ext === '7z') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        ZIP
+                                      </div>
+                                    );
+                                  }
+                                  // Text files
+                                  if (ext === 'txt') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        TXT
+                                      </div>
+                                    );
+                                  }
+                                  // Executable files
+                                  if (ext === 'exe') {
+                                    return (
+                                      <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                        EXE
+                                      </div>
+                                    );
+                                  }
+                                  // Default file icon
+                                  return (
+                                    <div className="flex-shrink-0 w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                      FILE
+                                    </div>
+                                  );
+                                })()}
                                 
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">
-                                    {msg.fileName || 'Document.pdf'}
+                                    {msg.fileName || 'Document'}
                                   </p>
                                   {msg.fileSize && (
                                     <span className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block">

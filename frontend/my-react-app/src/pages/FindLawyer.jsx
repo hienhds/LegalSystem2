@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import axiosInstance from "../utils/axiosInstance";
 
 export default function FindLawyer() {
+  const navigate = useNavigate();
+  
   // State for filters
   const [filters, setFilters] = useState({
     keyword: "",
@@ -211,6 +213,20 @@ export default function FindLawyer() {
     return stars;
   };
 
+  const handleChatWithLawyer = (lawyer) => {
+    // Navigate to contact page with lawyer info
+    navigate('/contact', {
+      state: {
+        selectedLawyer: {
+          lawyerId: lawyer.lawyerId,
+          fullName: lawyer.fullName,
+          avatarUrl: lawyer.avatarUrl,
+          specializations: lawyer.specializations,
+        }
+      }
+    });
+  };
+
   return (
     <Layout showFooter={true}>
       {/* Hero Section */}
@@ -386,7 +402,8 @@ export default function FindLawyer() {
                   {lawyers.map((lawyer) => (
                     <div
                       key={lawyer.lawyerId}
-                      className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col sm:flex-row gap-6 shadow-sm hover:shadow-lg hover:border-blue-600/50 transition-all duration-300"
+                      onClick={() => navigate(`/lawyers/${lawyer.lawyerId}`)}
+                      className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col sm:flex-row gap-6 shadow-sm hover:shadow-xl hover:border-blue-600 transition-all duration-300 cursor-pointer"
                     >
                       {/* Avatar */}
                       <div className="flex-shrink-0 text-center">
@@ -460,20 +477,25 @@ export default function FindLawyer() {
                           ))}
                         </div>
 
-                        <p className="text-sm text-slate-600 dark:text-slate-300 mt-4 line-clamp-2">
-                          {lawyer.bio || 'Chưa có thông tin'}
-                        </p>
+                        
 
-                        <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                          <Link
-                            to={`/lawyers/${lawyer.lawyerId}`}
-                            className="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 border border-blue-600 text-blue-600 text-sm font-bold hover:bg-blue-600/5 dark:hover:bg-blue-600/10"
+                        <div className="flex gap-2.5 mt-6">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChatWithLawyer(lawyer);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl h-11 px-5 bg-green-600 text-white text-sm font-bold hover:bg-green-700 active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg"
                           >
-                            Xem chi tiết
-                          </Link>
-                          <button className="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-blue-600 text-white text-sm font-bold gap-2 hover:bg-blue-700">
-                            <span className="material-symbols-outlined !text-base">calendar_month</span>
-                            Đặt lịch hẹn
+                            <span className="material-symbols-outlined !text-[18px]">chat_bubble</span>
+                            Nhắn tin
+                          </button>
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl h-11 px-5 bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg"
+                          >
+                            <span className="material-symbols-outlined !text-[18px]">calendar_month</span>
+                            Đặt lịch
                           </button>
                         </div>
                       </div>

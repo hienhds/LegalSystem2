@@ -1,0 +1,1446 @@
+{
+	"info": {
+		"_postman_id": "d103c854-d428-4295-8889-6758db6c999a",
+		"name": "User Service API Collection",
+		"description": "Complete API collection for User Service (Port 8081)\n\nIncludes:\n- Authentication (Login, Register, Password Reset)\n- User Management\n- Lawyer Management\n- Search (Lawyer Search, Search History)\n- Admin (Dashboard, User Management, Lawyer Management)\n\n**Usage:**\n1. Register → auto-save userId\n2. Login → auto-save accessToken\n3. All other requests use Bearer token automatically",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43552838",
+		"_collection_link": "https://quang-533012.postman.co/workspace/Quang's-Workspace~453b0b35-799d-434e-84ba-a0713bb5636d/collection/43552838-d103c854-d428-4295-8889-6758db6c999a?action=share&source=collection_link&creator=43552838"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.userId) {",
+									"        pm.collectionVariables.set('userId', jsonData.data.userId);",
+									"        console.log('Saved userId:', jsonData.data.userId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@gmail.com\",\n  \"phoneNumber\": \"0123456664\",\n  \"fullName\": \"Nguyen Van A\",\n  \"password\": \"12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify?token=78e56de7-8ef7-4eb1-98be-a00b45ec7647",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "78e56de7-8ef7-4eb1-98be-a00b45ec7647"
+								}
+							]
+						},
+						"description": "Verify email with token from email"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"        pm.collectionVariables.set('userId', jsonData.data.userId);",
+									"        console.log('Saved tokens and userId');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login and get access token"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"        console.log('Refreshed tokens');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Refresh access token using refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and invalidate refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/forgot-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"forgot-password"
+							]
+						},
+						"description": "Send password reset link to email"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Reset Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/reset-password/validate?token=reset_token_here",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"reset-password",
+								"validate"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "reset_token_here"
+								}
+							]
+						},
+						"description": "Validate password reset token"
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"reset-password"
+							]
+						},
+						"description": "Reset password with token"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. User Management",
+			"item": [
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Get user information by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Get current logged-in user profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"User dangki\",\n  \"phoneNumber\": \"098762324\",\n  \"address\": \"123 Hưng Yên city, Hanoi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Update user profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Avatar",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/laptop hoangkhuong/Pictures/nh/IMG_1219.jpeg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/avatar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"avatar"
+							]
+						},
+						"description": "Upload user avatar image"
+					},
+					"response": []
+				},
+				{
+					"name": "Search User by Name",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/search?fullName=Luat Su",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"search"
+							],
+							"query": [
+								{
+									"key": "fullName",
+									"value": "Luat Su"
+								}
+							]
+						},
+						"description": "Search users by full name"
+					},
+					"response": []
+				},
+				{
+					"name": "Register as Lawyer",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"value": "{\n  \"barLicenseId\": \"BAR123382\",\n  \"bio\": \"Mô tả về luật sư...\",\n  \"officeAddress\": \"123 Đường ABC, Quận 1, TP.HCM\",\n  \"yearsOfExp\": 5,\n  \"barAssociationId\": 9,\n  \"specializationIds\": [1, 2, 3]\n}",
+									"type": "text"
+								},
+								{
+									"key": "certificate",
+									"type": "file",
+									"src": "/D:/LeganSystem2/LegalSystem2/user-service/uploads/certificates/1766721387348_1763405867671_certificate.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/register-lawyer",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"register-lawyer"
+							]
+						},
+						"description": "Register current user as a lawyer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users by IDs (Internal)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/internal/ids?ids=1&ids=2&ids=3",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"internal",
+								"ids"
+							],
+							"query": [
+								{
+									"key": "ids",
+									"value": "1"
+								},
+								{
+									"key": "ids",
+									"value": "2"
+								},
+								{
+									"key": "ids",
+									"value": "3"
+								}
+							]
+						},
+						"description": "Internal API: Get multiple users by IDs"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID (Internal)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/internal/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"internal",
+								"{{userId}}"
+							]
+						},
+						"description": "Internal API: Get user summary by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Lawyer Management",
+			"item": [
+				{
+					"name": "Get All Lawyers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get paginated list of all lawyers"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.lawyerId) {",
+									"        pm.collectionVariables.set('lawyerId', jsonData.data.lawyerId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/{{lawyerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"{{lawyerId}}"
+							]
+						},
+						"description": "Get lawyer basic information by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/{{lawyerId}}/details",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"{{lawyerId}}",
+								"details"
+							]
+						},
+						"description": "Get detailed lawyer information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"stats"
+							]
+						},
+						"description": "Get statistics about lawyers"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer Reviews",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/{{lawyerId}}/reviews?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"{{lawyerId}}",
+								"reviews"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get reviews for a lawyer"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Lawyer Profile",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "barAssociationId",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "specializationIds",
+									"value": "1,2,3",
+									"type": "text"
+								},
+								{
+									"key": "yearsOfExperience",
+									"value": "5",
+									"type": "text"
+								},
+								{
+									"key": "licenseNumber",
+									"value": "LAW123456",
+									"type": "text"
+								},
+								{
+									"key": "education",
+									"value": "Law Degree",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Experienced lawyer",
+									"type": "text"
+								},
+								{
+									"key": "certificate",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers"
+							]
+						},
+						"description": "Create new lawyer profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Additional Certificates",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/laptop hoangkhuong/Pictures/Image/250472.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/certificates",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"certificates"
+							]
+						},
+						"description": "Upload additional certificate files"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Lawyer Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bio\": \"Updated bio new\",\n   \"phoneNumber\": \"01234567778\",\n  \"specializationIds\": [1, 2, 4]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyers/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyers",
+								"profile"
+							]
+						},
+						"description": "Update lawyer profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Specializations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/specializations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"specializations"
+							]
+						},
+						"description": "Get list of all lawyer specializations"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Bar Associations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/bar-associations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bar-associations"
+							]
+						},
+						"description": "Get list of all bar associations"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Search",
+			"item": [
+				{
+					"name": "Lawyer Search",
+					"item": [
+						{
+							"name": "Search Lawyers (POST)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"keyword\": \"luật sư\",\n  \"specializationIds\": [1, 2],\n  \"barAssociationId\": 9,\n  \"minYearsOfExp\": 3,\n  \"maxYearsOfExp\": 10,\n  \"minRating\": 0,\n  \"page\": 0,\n  \"size\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search/lawyers",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"lawyers"
+									]
+								},
+								"description": "Search lawyers with filters (POST method)"
+							},
+							"response": []
+						},
+						{
+							"name": "Search Lawyers (GET)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/search/lawyers?keyword=luật&page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"lawyers"
+									],
+									"query": [
+										{
+											"key": "keyword",
+											"value": "luật"
+										},
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Search lawyers with keyword (GET method)"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Search History",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/search/history?page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"history"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Get current user's search history"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Trending Searches",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/search/trending?limit=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"trending"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Get trending search keywords"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Popular Lawyers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/search/popular-lawyers?limit=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"popular-lawyers"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Get most popular lawyers"
+							},
+							"response": []
+						},
+						{
+							"name": "Track Lawyer Click",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"lawyerId\":3 ,\n  \"keyword\": \"luật sư\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search/track-click",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"track-click"
+									]
+								},
+								"description": "Track when user clicks on a lawyer from search results"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Search Suggestions",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/search/suggestions?query=luật",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search",
+										"suggestions"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "luật"
+										}
+									]
+								},
+								"description": "Get search suggestions based on query"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "5. Admin",
+			"item": [
+				{
+					"name": "Dashboard",
+					"item": [
+						{
+							"name": "Get Dashboard Stats",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/dashboard/stats",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"dashboard",
+										"stats"
+									]
+								},
+								"description": "Get dashboard statistics"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Registration Stats",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/dashboard/registrations?period=WEEKLY",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"dashboard",
+										"registrations"
+									],
+									"query": [
+										{
+											"key": "period",
+											"value": "WEEKLY",
+											"description": "DAILY, WEEKLY, MONTHLY, YEARLY"
+										}
+									]
+								},
+								"description": "Get user registration statistics by period"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Lawyer Verification Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/dashboard/lawyer-verification-status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"dashboard",
+										"lawyer-verification-status"
+									]
+								},
+								"description": "Get lawyer verification status statistics"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "User Management",
+					"item": [
+						{
+							"name": "Get All Users",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users?page=0&size=10&search=&role=",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"users"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "search",
+											"value": ""
+										},
+										{
+											"key": "role",
+											"value": ""
+										}
+									]
+								},
+								"description": "Get paginated list of all users with optional filters"
+							},
+							"response": []
+						},
+						{
+							"name": "Lock User",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Violation of terms\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}/lock",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"users",
+										"{{userId}}",
+										"lock"
+									]
+								},
+								"description": "Lock a user account"
+							},
+							"response": []
+						},
+						{
+							"name": "Unlock User",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}/unlock",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"users",
+										"{{userId}}",
+										"unlock"
+									]
+								},
+								"description": "Unlock a user account"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete User",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"users",
+										"{{userId}}"
+									]
+								},
+								"description": "Delete a user account"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Lawyer Management",
+					"item": [
+						{
+							"name": "Get All Lawyers register",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers?page=0&size=10&status=PENDING",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										},
+										{
+											"key": "status",
+											"value": "PENDING",
+											"description": "PENDING, APPROVED, REJECTED"
+										}
+									]
+								},
+								"description": "Get paginated list of lawyers with optional status filter"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Lawyer by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers/{{lawyerId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers",
+										"{{lawyerId}}"
+									]
+								},
+								"description": "Get detailed lawyer information"
+							},
+							"response": []
+						},
+						{
+							"name": "Update Lawyer Status",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers/{{lawyerId}}/status?status=PENDING",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers",
+										"{{lawyerId}}",
+										"status"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "PENDING"
+										}
+									]
+								},
+								"description": "Update lawyer verification status"
+							},
+							"response": []
+						},
+						{
+							"name": "Approve Lawyer",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers/{{lawyerId}}/approve",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers",
+										"{{lawyerId}}",
+										"approve"
+									]
+								},
+								"description": "Approve lawyer registration"
+							},
+							"response": []
+						},
+						{
+							"name": "Reject Lawyer",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Invalid certificate\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers/{{lawyerId}}/reject",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers",
+										"{{lawyerId}}",
+										"reject"
+									]
+								},
+								"description": "Reject lawyer registration with reason"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Lawyer",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/lawyers/{{lawyerId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"lawyers",
+										"{{lawyerId}}"
+									]
+								},
+								"description": "Delete lawyer profile"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lawyerId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

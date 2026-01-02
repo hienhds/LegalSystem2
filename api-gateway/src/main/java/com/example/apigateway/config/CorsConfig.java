@@ -1,14 +1,10 @@
 package com.example.apigateway.config;
 
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 
@@ -18,33 +14,35 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        // Cho phép Frontend truy cập
-        corsConfig.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        corsConfig.setMaxAge(3600L);
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        
+        // Cho phép tất cả origins trong môi trường dev
+        corsConfig.addAllowedOriginPattern("http://localhost:*");
+        corsConfig.addAllowedOriginPattern("http://127.0.0.1:*");
+        
+        // Hoặc bạn có thể chỉ định cụ thể:
+        corsConfig.addAllowedOrigin("http://localhost:5173");
+        corsConfig.addAllowedOrigin("http://localhost:3000");
+        corsConfig.addAllowedOrigin("http://localhost:5174");
+        corsConfig.addAllowedOrigin("http://127.0.0.1:5173");
+        
+        // Cho phép tất cả methods
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
+        
+        // Cho phép tất cả headers
         corsConfig.setAllowedHeaders(Arrays.asList("*"));
+        
+        // Cho phép credentials (cookies, authorization headers)
         corsConfig.setAllowCredentials(true);
+        
+        // Expose headers
+        corsConfig.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        
+        // Max age for preflight requests
+        corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
 
         return new CorsWebFilter(source);
-    }
-
-    // CÁI NÀY QUAN TRỌNG: GlobalFilter này sẽ "dọn dẹp" mọi header CORS trùng lặp từ service khác gửi lên
-    @Bean
-    public GlobalFilter corsResponseHeaderFilter() {
-        return (exchange, chain) -> chain.filter(exchange).then(Mono.fromRunnable(() -> {
-            exchange.getResponse().getHeaders().entrySet().stream()
-                    .filter(entry -> entry.getKey().equalsIgnoreCase(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN)
-                            || entry.getKey().equalsIgnoreCase(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS))
-                    .forEach(entry -> {
-                        // Nếu có nhiều hơn 1 giá trị, chỉ giữ lại giá trị đầu tiên
-                        if (entry.getValue().size() > 1) {
-                            String firstValue = entry.getValue().get(0);
-                            exchange.getResponse().getHeaders().set(entry.getKey(), firstValue);
-                        }
-                    });
-        }));
     }
 }

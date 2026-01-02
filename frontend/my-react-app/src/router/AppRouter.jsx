@@ -17,9 +17,7 @@ import LegalDocumentDetail from "../pages/LegalDocumentDetail";
 import FindLawyer from "../pages/FindLawyer";
 import LawyerDetail from "../pages/LawyerDetail";
 import Contact from "../pages/Contact";
-import CreateCase from "../pages/CreateCase";
-import CaseDetail from "../pages/CaseDetail";
-import CaseList from "../pages/CaseList";
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -75,19 +73,6 @@ export default function AppRouter() {
         <Route path="/lawyers/:id" element={<LawyerDetail />} />
         <Route path="/lawyer/:id" element={<LawyerDetail />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/create-case" element={
-          <ProtectedRoute>
-            <CreateCase />
-          </ProtectedRoute>
-        } />
-
-        {/* Route xem chi tiết vụ án */}
-        <Route path="/cases/:id" element={
-          <ProtectedRoute>
-            <CaseDetail />
-          </ProtectedRoute>
-        } />
-        <Route path="/cases" element={<ProtectedRoute><CaseList /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

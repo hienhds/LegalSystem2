@@ -1,0 +1,864 @@
+{
+  "info": {
+    "name": "LegalSystem Microservices - Complete API Collection",
+    "description": "Tổng hợp tất cả API của hệ thống Legal Tech Microservices bao gồm: User Service, Chat Service, File Service (gRPC), Notification Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "chatServiceUrl",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "notificationServiceUrl",
+      "value": "http://localhost:8085",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lawyerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.userId) {",
+                  "        pm.environment.set('userId', jsonData.data.userId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"12345678\",\n    \"fullName\": \"Nguyen Van A\",\n    \"phoneNumber\": \"0987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/register",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.environment.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.environment.set('refreshToken', jsonData.data.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/login",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/refresh",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/forgot-password",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"reset-token-here\",\n    \"newPassword\": \"newPassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/reset-password",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "reset-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. User Management",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/users/profile",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Updated Name\",\n    \"phoneNumber\": \"0123456789\",\n    \"address\": \"123 Street, City\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/users/profile",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/users/avatar",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "users", "avatar"]
+            }
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/users/{{userId}}",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search User By FullName",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/users/search?fullName=Nguyen",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "users", "search"],
+              "query": [
+                {
+                  "key": "fullName",
+                  "value": "Nguyen"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Lawyer Management",
+      "item": [
+        {
+          "name": "Get All Lawyers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers?page=0&size=10",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers/{{lawyerId}}",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers", "{{lawyerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers/{{lawyerId}}/details",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers", "{{lawyerId}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers/stats",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Create Lawyer (Register as Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\"barLicenseId\":\"BAR123456\",\"bio\":\"Experienced lawyer\",\"officeAddress\":\"123 Law St\",\"yearsOfExp\":5,\"barAssociationId\":1,\"specializationIds\":[1,2]}",
+                  "type": "text"
+                },
+                {
+                  "key": "certificate",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers"]
+            }
+          }
+        },
+        {
+          "name": "Upload Certificate",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers/certificates",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers", "certificates"]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/lawyers/{{lawyerId}}/reviews?page=0&size=10",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "lawyers", "{{lawyerId}}", "reviews"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Appointments",
+      "item": [
+        {
+          "name": "Create Appointment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"lawyerId\": 1,\n    \"appointmentDate\": \"2025-12-30\",\n    \"appointmentTime\": \"10:00:00\",\n    \"description\": \"Tư vấn hợp đồng\",\n    \"consultationType\": \"ONLINE\",\n    \"meetingLocation\": \"Zoom\",\n    \"durationMinutes\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "Get My Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/my-appointments?page=0&size=10",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "my-appointments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/lawyer-appointments?page=0&size=10",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "lawyer-appointments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Appointment By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1?isLawyer=false",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1"],
+              "query": [
+                {
+                  "key": "isLawyer",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirm Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Xác nhận lịch hẹn\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1/confirm",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Reject Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Lý do từ chối\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1/reject",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Lý do hủy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1/cancel?isLawyer=false",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1", "cancel"],
+              "query": [
+                {
+                  "key": "isLawyer",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Complete Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1/complete",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Rate Appointment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"rating\": 5,\n    \"comment\": \"Rất hài lòng với dịch vụ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/appointments/1/rate",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "appointments", "1", "rate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Admin - Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/dashboard/stats",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Registration Chart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/dashboard/registrations?days=7",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "dashboard", "registrations"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/dashboard/lawyer-verification-status",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "dashboard", "lawyer-verification-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Admin - User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/users?page=0&size=20",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "nguyen",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lock User",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/users/{{userId}}/lock",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "users", "{{userId}}", "lock"]
+            }
+          }
+        },
+        {
+          "name": "Unlock User",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/users/{{userId}}/unlock",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "users", "{{userId}}", "unlock"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/users/{{userId}}",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "users", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Admin - Lawyer Management",
+      "item": [
+        {
+          "name": "Get All Lawyers (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/lawyers?page=0&size=10",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "lawyers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "verificationStatus",
+                  "value": "PENDING",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lawyer Detail (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/lawyers/{{lawyerId}}",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "lawyers", "{{lawyerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Approve Lawyer",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/lawyers/{{lawyerId}}/approve",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "lawyers", "{{lawyerId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Lawyer",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Thông tin chưa đầy đủ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/admin/lawyers/{{lawyerId}}/reject",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "admin", "lawyers", "{{lawyerId}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Specializations",
+      "item": [
+        {
+          "name": "Get All Specializations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/specializations",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "specializations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Bar Associations",
+      "item": [
+        {
+          "name": "Get All Bar Associations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/api/bar-associations",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "bar-associations"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

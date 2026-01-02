@@ -23,11 +23,8 @@ export default function Header() {
           <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hỏi Đáp</a>
           <Link to="/legal-documents" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Văn Bản Pháp Luật</Link>
           <Link to="/contact" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Liên Hệ</Link>
-          {/* <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hồ Sơ</a> */}
-          <Link to="/cases" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">
-          Hồ Sơ Vụ Án
-          </Link>
-          {user?.role === "ADMIN" && (
+          <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hồ Sơ</a>
+          {user?.roles?.includes("ADMIN") && (
             <button
               onClick={() => navigate("/admin/dashboard")}
               className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md transition-all duration-200"

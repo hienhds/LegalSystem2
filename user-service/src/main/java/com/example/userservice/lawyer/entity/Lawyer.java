@@ -50,6 +50,7 @@ public class Lawyer {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false)
+    @Builder.Default
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
     @Column(name = "verified_at")

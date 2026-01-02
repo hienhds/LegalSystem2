@@ -1,4 +1,4 @@
-package com.example.userservice.admin;
+package com.example.userservice.admin.controller;
 
 
 import com.example.userservice.common.dto.ApiResponse;
@@ -92,6 +92,75 @@ public class LawyerAdminController {
                         .status(HttpStatus.OK.value())
                         .message("Status updated successfully")
                         .data(msg)
+                        .path(request.getRequestURI())
+                        .timestamp(Instant.now())
+                        .traceId(UUID.randomUUID().toString())
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+    
+    // 4. Approve lawyer (verify)
+    @PutMapping("/{lawyerId}/approve")
+    public ResponseEntity<ApiResponse<String>> approveLawyer(
+            @PathVariable Long lawyerId,
+            HttpServletRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Long adminId = user.getUser().getUserId();
+        String msg = lawyerService.updateStatus(lawyerId, VerificationStatus.APPROVED, adminId);
+
+        ApiResponse<String> response =
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .status(HttpStatus.OK.value())
+                        .message("Xác minh luật sư thành công")
+                        .data(msg)
+                        .path(request.getRequestURI())
+                        .timestamp(Instant.now())
+                        .traceId(UUID.randomUUID().toString())
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 5. Reject lawyer
+    @PutMapping("/{lawyerId}/reject")
+    public ResponseEntity<ApiResponse<String>> rejectLawyer(
+            @PathVariable Long lawyerId,
+            HttpServletRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Long adminId = user.getUser().getUserId();
+        String msg = lawyerService.updateStatus(lawyerId, VerificationStatus.REJECTED, adminId);
+
+        ApiResponse<String> response =
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .status(HttpStatus.OK.value())
+                        .message("Từ chối xác minh luật sư thành công")
+                        .data(msg)
+                        .path(request.getRequestURI())
+                        .timestamp(Instant.now())
+                        .traceId(UUID.randomUUID().toString())
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 6. Delete lawyer
+    @DeleteMapping("/{lawyerId}")
+    public ResponseEntity<ApiResponse<Void>> deleteLawyer(
+            @PathVariable Long lawyerId,
+            HttpServletRequest request
+    ) {
+        lawyerService.deleteLawyer(lawyerId);
+
+        ApiResponse<Void> response =
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .status(HttpStatus.OK.value())
+                        .message("Xóa luật sư thành công")
                         .path(request.getRequestURI())
                         .timestamp(Instant.now())
                         .traceId(UUID.randomUUID().toString())

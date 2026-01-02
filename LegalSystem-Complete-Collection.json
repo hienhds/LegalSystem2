@@ -1,0 +1,864 @@
+{
+  "info": {
+    "name": "Legal System API - Complete",
+    "description": "Complete API collection for Legal System microservices with all endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. User Service",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Register",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0987654321\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/register",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "register"]
+                }
+              }
+            },
+            {
+              "name": "Verify Email",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/verify?token={{VERIFICATION_TOKEN}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "verify"],
+                  "query": [{"key": "token", "value": "{{VERIFICATION_TOKEN}}"}]
+                }
+              }
+            },
+            {
+              "name": "Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('ACCESS_TOKEN', jsonData.data.accessToken);",
+                      "    pm.environment.set('REFRESH_TOKEN', jsonData.data.refreshToken);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/login",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Refresh Token",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/refresh",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "refresh"]
+                }
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/logout",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "logout"]
+                }
+              }
+            },
+            {
+              "name": "Forgot Password",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/forgot-password",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "forgot-password"]
+                }
+              }
+            },
+            {
+              "name": "Validate Reset Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/reset-password/validate?token={{RESET_TOKEN}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "reset-password", "validate"],
+                  "query": [{"key": "token", "value": "{{RESET_TOKEN}}"}]
+                }
+              }
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{RESET_TOKEN}}\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/auth/reset-password",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "auth", "reset-password"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get User By ID",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/users/{{USER_ID}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "users", "{{USER_ID}}"]
+                }
+              }
+            },
+            {
+              "name": "Update Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Nguyen Van B\",\n  \"phoneNumber\": \"0912345678\",\n  \"bio\": \"Legal consultant\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/users/profile",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "users", "profile"]
+                }
+              }
+            },
+            {
+              "name": "Upload Avatar",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{"key": "file", "type": "file", "src": []}]
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/users/avatar",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "users", "avatar"]
+                }
+              }
+            },
+            {
+              "name": "Search User By Full Name",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/users/search?fullName=Nguyen",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "users", "search"],
+                  "query": [{"key": "fullName", "value": "Nguyen"}]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lawyer Management",
+          "item": [
+            {
+              "name": "Request Lawyer Upgrade",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "data",
+                      "value": "{\"specializations\": [1, 2], \"barAssociationId\": 1, \"licenseNumber\": \"LAW123456\", \"yearsOfExperience\": 5}",
+                      "type": "text"
+                    },
+                    {"key": "certificate", "type": "file", "src": []}
+                  ]
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/lawyers",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "lawyers"]
+                }
+              }
+            },
+            {
+              "name": "Upload Certificate",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [{"key": "file", "type": "file", "src": []}]
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/lawyers/certificates",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "lawyers", "certificates"]
+                }
+              }
+            },
+            {
+              "name": "Get All Specializations",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/specializations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "specializations"]
+                }
+              }
+            },
+            {
+              "name": "Create Specialization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Criminal Law\",\n  \"description\": \"Specialization in criminal cases\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/specializations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "specializations"]
+                }
+              }
+            },
+            {
+              "name": "Get All Bar Associations",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/bar-associations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "bar-associations"]
+                }
+              }
+            },
+            {
+              "name": "Create Bar Association",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Hanoi Bar Association\",\n  \"province\": \"Hanoi\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/bar-associations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "bar-associations"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Lawyer Approval",
+          "item": [
+            {
+              "name": "Get Pending Lawyers",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/admin/lawyers/pending",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "admin", "lawyers", "pending"]
+                }
+              }
+            },
+            {
+              "name": "Approve Lawyer",
+              "request": {
+                "method": "PUT",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/admin/lawyers/{{LAWYER_ID}}/approve",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "admin", "lawyers", "{{LAWYER_ID}}", "approve"]
+                }
+              }
+            },
+            {
+              "name": "Reject Lawyer",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Invalid certificate\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/admin/lawyers/{{LAWYER_ID}}/reject",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "admin", "lawyers", "{{LAWYER_ID}}", "reject"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Chat Service",
+      "item": [
+        {
+          "name": "Conversations",
+          "item": [
+            {
+              "name": "Create Conversation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Legal Consultation Group\",\n  \"type\": \"GROUP\",\n  \"members\": [2, 3, 4]\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations"]
+                }
+              }
+            },
+            {
+              "name": "Generate Avatar Presigned URL",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/avatar?fileName=avatar.jpg&contentType=image/jpeg&fileSize=102400",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "avatar"],
+                  "query": [
+                    {"key": "fileName", "value": "avatar.jpg"},
+                    {"key": "contentType", "value": "image/jpeg"},
+                    {"key": "fileSize", "value": "102400"}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get All Conversations",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations"]
+                }
+              }
+            },
+            {
+              "name": "Get Conversation By ID",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}"]
+                }
+              }
+            },
+            {
+              "name": "Dissolve Conversation",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}"]
+                }
+              }
+            },
+            {
+              "name": "Leave Conversation",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/leave",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "leave"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Messages",
+          "item": [
+            {
+              "name": "Get Messages",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/messages?limit=20",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "messages"],
+                  "query": [
+                    {"key": "limit", "value": "20"},
+                    {"key": "cursor", "value": "", "disabled": true}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Send Text Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Hello, I need legal consultation\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/messages/text",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "messages", "text"]
+                }
+              }
+            },
+            {
+              "name": "Generate File Upload URL",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/messages/file?fileName=document.pdf&contentType=application/pdf&fileSize=204800",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "messages", "file"],
+                  "query": [
+                    {"key": "fileName", "value": "document.pdf"},
+                    {"key": "contentType", "value": "application/pdf"},
+                    {"key": "fileSize", "value": "204800"}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Conversation Files",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/files?limit=20",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "files"],
+                  "query": [
+                    {"key": "limit", "value": "20"},
+                    {"key": "cursor", "value": "", "disabled": true}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Preview File",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/messages/files/{{FILE_ID}}/preview",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "messages", "files", "{{FILE_ID}}", "preview"]
+                }
+              }
+            },
+            {
+              "name": "Download File",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/messages/files/{{FILE_ID}}/download",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "messages", "files", "{{FILE_ID}}", "download"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Members",
+          "item": [
+            {
+              "name": "Add Member",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"memberId\": 5\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/members",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "members"]
+                }
+              }
+            },
+            {
+              "name": "Remove Member",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/members/{{MEMBER_ID}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "members", "{{MEMBER_ID}}"]
+                }
+              }
+            },
+            {
+              "name": "Block User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"blockedUserId\": 10\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/blocked-users",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "blocked-users"]
+                }
+              }
+            },
+            {
+              "name": "Unblock User",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/blocked-users/{{USER_ID}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "blocked-users", "{{USER_ID}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invitations",
+          "item": [
+            {
+              "name": "Create Invite Link",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"maxUses\": 10,\n  \"expiresInMinutes\": 1440\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/invites",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "invites"]
+                }
+              }
+            },
+            {
+              "name": "Get All Invites",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/conversations/{{CONVERSATION_ID}}/invites",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "conversations", "{{CONVERSATION_ID}}", "invites"]
+                }
+              }
+            },
+            {
+              "name": "Join By Invite Code",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/invites/{{INVITE_CODE}}/join",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "invites", "{{INVITE_CODE}}", "join"]
+                }
+              }
+            },
+            {
+              "name": "Delete Invite",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/chat-room/invites/{{INVITE_CODE}}",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "chat-room", "invites", "{{INVITE_CODE}}"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Notification Service",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications?page=0&size=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"},
+                {"key": "read", "value": "false", "disabled": true},
+                {"key": "type", "value": "CHAT", "disabled": true},
+                {"key": "keyword", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification Detail",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/{{NOTIFICATION_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications", "{{NOTIFICATION_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/unread/count",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications", "unread", "count"]
+            }
+          }
+        },
+        {
+          "name": "Mark As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/{{NOTIFICATION_ID}}/read",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications", "{{NOTIFICATION_ID}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/read-all",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/{{NOTIFICATION_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "notifications", "{{NOTIFICATION_ID}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. File Service",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "src": []},
+                {"key": "conversationId", "value": "{{CONVERSATION_ID}}", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/files/upload",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "files", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get File URL",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/files/{{FILE_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "files", "{{FILE_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/files/{{FILE_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "files", "{{FILE_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "List Files By Owner",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/files?ownerId={{USER_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "files"],
+              "query": [{"key": "ownerId", "value": "{{USER_ID}}"}]
+            }
+          }
+        },
+        {
+          "name": "List Files By Conversation",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}],
+            "url": {
+              "raw": "{{BASE_URL}}/api/files?conversationId={{CONVERSATION_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "files"],
+              "query": [{"key": "conversationId", "value": "{{CONVERSATION_ID}}"}]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "BASE_URL", "value": "http://localhost:8080", "type": "string"},
+    {"key": "ACCESS_TOKEN", "value": "", "type": "string"},
+    {"key": "REFRESH_TOKEN", "value": "", "type": "string"},
+    {"key": "USER_ID", "value": "1", "type": "string"},
+    {"key": "CONVERSATION_ID", "value": "", "type": "string"},
+    {"key": "VERIFICATION_TOKEN", "value": "", "type": "string"},
+    {"key": "RESET_TOKEN", "value": "", "type": "string"},
+    {"key": "NOTIFICATION_ID", "value": "", "type": "string"},
+    {"key": "MEMBER_ID", "value": "", "type": "string"},
+    {"key": "INVITE_CODE", "value": "", "type": "string"},
+    {"key": "FILE_ID", "value": "", "type": "string"},
+    {"key": "LAWYER_ID", "value": "", "type": "string"}
+  ]
+}

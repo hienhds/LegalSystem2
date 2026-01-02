@@ -70,7 +70,7 @@ export default function LawyerManagement() {
 
   const handleVerifyLawyer = async () => {
     try {
-      await axiosInstance.put(`/api/admin/lawyers/${selectedLawyer.lawyerId}/verify`);
+      await axiosInstance.put(`/api/admin/lawyers/${selectedLawyer.lawyerId}/approve`);
       setShowVerifyModal(false);
       setShowDetailModal(false);
       fetchLawyers();

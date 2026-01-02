@@ -52,6 +52,12 @@ export const useChatWebSocket = (conversationId, onMessageReceived) => {
       return;
     }
 
+    // Don't subscribe to temp conversations
+    const isTempConversation = String(conversationId).startsWith('temp_');
+    if (isTempConversation) {
+      return;
+    }
+
     // Unsubscribe previous conversation
     if (subscriptionRef.current) {
       subscriptionRef.current.unsubscribe();

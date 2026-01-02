@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.Arrays;
+
 /**
  * Cấu hình bảo mật chính của hệ thống.
  * - Stateless (JWT)
@@ -36,6 +38,9 @@ public class SecurityConfig {
         http
                 // Tắt CSRF vì ta dùng JWT
                 .csrf(csrf -> csrf.disable())
+
+                // Tắt CORS vì API Gateway đã xử lý CORS
+                .cors(cors -> cors.disable())
 
                 // Cấu hình session là stateless (vì JWT không cần session)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -61,7 +66,8 @@ public class SecurityConfig {
                                 "/static/**",
                                 "/images/**",
                                 "/css/**",
-                                "/js/**"
+                                "/js/**",
+                                "/uploads/**"
                         ).permitAll()
 
 //                        // USER + LAWYER + ADMIN
@@ -98,4 +104,6 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    // CORS đã được xử lý ở API Gateway, không cần config ở đây nữa
 }

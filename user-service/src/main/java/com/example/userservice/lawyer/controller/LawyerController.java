@@ -4,20 +4,24 @@ import com.example.userservice.common.dto.ApiResponse;
 import com.example.userservice.common.security.CustomUserDetails;
 import com.example.userservice.common.service.UploadImageService;
 import com.example.userservice.lawyer.dto.request.LawyerRequest;
+import com.example.userservice.lawyer.dto.request.UpdateLawyerProfileRequest;
+import com.example.userservice.lawyer.dto.response.LawyerDetailResponse;
+import com.example.userservice.lawyer.dto.response.LawyerListResponse;
 import com.example.userservice.lawyer.dto.response.LawyerResponse;
+import com.example.userservice.lawyer.dto.response.LawyerReviewResponse;
+import com.example.userservice.lawyer.dto.response.LawyerStatsResponse;
 import com.example.userservice.lawyer.service.LawyerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
@@ -29,6 +33,103 @@ public class LawyerController {
 
     private final LawyerService lawyerService;
     private final UploadImageService uploadImageService;
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<LawyerListResponse>> getLawyerById(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        
+        LawyerListResponse lawyer = lawyerService.getLawyerById(id);
+        
+        ApiResponse<LawyerListResponse> response = ApiResponse.<LawyerListResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin luật sư thành công")
+                .data(lawyer)
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/{id}/details")
+    public ResponseEntity<ApiResponse<LawyerDetailResponse>> getLawyerDetails(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        
+        LawyerDetailResponse lawyer = lawyerService.getLawyerDetails(id);
+        
+        ApiResponse<LawyerDetailResponse> response = ApiResponse.<LawyerDetailResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy chi tiết luật sư thành công")
+                .data(lawyer)
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<LawyerStatsResponse>> getStats(
+            HttpServletRequest request) {
+        
+        LawyerStatsResponse stats = lawyerService.getStats();
+        
+        ApiResponse<LawyerStatsResponse> response = ApiResponse.<LawyerStatsResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy thống kê luật sư thành công")
+                .data(stats)
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<LawyerListResponse>>> getAllLawyers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        
+        Page<LawyerListResponse> lawyers = lawyerService.getAllLawyers(page, size);
+        
+        ApiResponse<Page<LawyerListResponse>> response = ApiResponse.<Page<LawyerListResponse>>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy danh sách luật sư thành công")
+                .data(lawyers)
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<ApiResponse<Page<LawyerReviewResponse>>> getLawyerReviews(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        
+        Page<LawyerReviewResponse> reviews = lawyerService.getLawyerReviews(id, page, size);
+        
+        ApiResponse<Page<LawyerReviewResponse>> response = ApiResponse.<Page<LawyerReviewResponse>>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Lấy danh sách đánh giá thành công")
+                .data(reviews)
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+        
+        return ResponseEntity.ok(response);
+    }
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<LawyerResponse>> createLawyer(
             @RequestParam("data") String data,           // <--- String, không phải LawyerRequest
@@ -73,6 +174,27 @@ public class LawyerController {
                 .data(url)
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+    
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<LawyerDetailResponse>> updateLawyerProfile(
+            @Valid @RequestBody UpdateLawyerProfileRequest request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpServletRequest servletRequest) {
+
+        Long userId = user.getUser().getUserId();
+        LawyerDetailResponse lawyerDetail = lawyerService.updateLawyerProfile(userId, request);
+
+        ApiResponse<LawyerDetailResponse> response = ApiResponse.<LawyerDetailResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Cập nhật thông tin luật sư thành công")
+                .data(lawyerDetail)
+                .path(servletRequest.getRequestURI())
+                .timestamp(Instant.now())
                 .build();
 
         return ResponseEntity.ok(response);

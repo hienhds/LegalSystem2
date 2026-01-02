@@ -23,7 +23,6 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 @RequestMapping("/api/auth")
 public class SignUpController {
 

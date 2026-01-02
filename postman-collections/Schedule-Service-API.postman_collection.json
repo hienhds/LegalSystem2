@@ -1,0 +1,386 @@
+{
+  "info": {
+    "name": "Schedule Service API Collection",
+    "description": "Complete API collection for Schedule Service (Port 8082)\n\nIncludes:\n- Appointment Management (Create, Confirm, Reject, Cancel, Complete, Rate)\n\n**Usage:**\n1. Login from User Service to get token\n2. Use token for all appointment requests\n3. citizenId and lawyerId are user IDs from User Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "citizenId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lawyerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appointmentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication (User Service)",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "        console.log('Saved tokens and userId');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/login",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login to get access token from User Service"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Appointment Management",
+      "item": [
+        {
+          "name": "Create Appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.appointmentId) {",
+                  "        pm.collectionVariables.set('appointmentId', jsonData.data.appointmentId);",
+                  "        console.log('Saved appointmentId:', jsonData.data.appointmentId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lawyerId\": 1,\n  \"appointmentDate\": \"2026-01-15T10:00:00\",\n  \"duration\": 60,\n  \"description\": \"Tư vấn hợp đồng\",\n  \"location\": \"Văn phòng luật sư\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments?citizenId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"],
+              "query": [
+                {
+                  "key": "citizenId",
+                  "value": "{{userId}}"
+                }
+              ]
+            },
+            "description": "Create new appointment with lawyer"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Citizen Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/citizen/{{userId}}?page=0&size=10&status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "citizen", "{{userId}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED"
+                }
+              ]
+            },
+            "description": "Get all appointments for a citizen (user)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Lawyer Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/lawyer/{{lawyerId}}?page=0&size=10&status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "lawyer", "{{lawyerId}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED"
+                }
+              ]
+            },
+            "description": "Get all appointments for a lawyer"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}?userId={{userId}}&isLawyer=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                },
+                {
+                  "key": "isLawyer",
+                  "value": "false",
+                  "description": "true if requesting user is a lawyer"
+                }
+              ]
+            },
+            "description": "Get appointment details by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Tôi sẽ gặp bạn đúng giờ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/confirm?lawyerId={{lawyerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "confirm"],
+              "query": [
+                {
+                  "key": "lawyerId",
+                  "value": "{{lawyerId}}"
+                }
+              ]
+            },
+            "description": "Lawyer confirms appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Bận công việc khác\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/reject?lawyerId={{lawyerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "reject"],
+              "query": [
+                {
+                  "key": "lawyerId",
+                  "value": "{{lawyerId}}"
+                }
+              ]
+            },
+            "description": "Lawyer rejects appointment with reason"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Không thể tham gia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel?userId={{userId}}&isLawyer=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "cancel"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                },
+                {
+                  "key": "isLawyer",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Cancel appointment (citizen or lawyer)"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Appointment (Lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/complete?lawyerId={{lawyerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "complete"],
+              "query": [
+                {
+                  "key": "lawyerId",
+                  "value": "{{lawyerId}}"
+                }
+              ]
+            },
+            "description": "Lawyer marks appointment as completed"
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Appointment (Citizen)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Luật sư rất chuyên nghiệp và nhiệt tình\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/rate?citizenId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "{{appointmentId}}", "rate"],
+              "query": [
+                {
+                  "key": "citizenId",
+                  "value": "{{userId}}"
+                }
+              ]
+            },
+            "description": "Citizen rates completed appointment"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
