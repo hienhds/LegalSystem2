@@ -23,7 +23,8 @@ public class CaseController {
             @RequestBody CreateCaseRequest request,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền tạo vụ án");
         }
         return ApiResponse.<CaseResponse>builder()
@@ -66,7 +67,7 @@ public class CaseController {
             @RequestBody CreateCaseRequest request,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền chỉnh sửa thông tin vụ án");
         }
         return ApiResponse.<CaseResponse>builder()
@@ -106,7 +107,7 @@ public class CaseController {
             @RequestParam("file") MultipartFile file,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền tải lên tài liệu vụ án");
         }
         return ApiResponse.<String>builder()
@@ -122,7 +123,7 @@ public class CaseController {
             @PathVariable("docId") Long docId,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền xóa tài liệu vụ án");
         }
         caseService.deleteDocument(id, docId, currentUserId);
@@ -138,7 +139,7 @@ public class CaseController {
             @RequestBody UpdateProgressRequest request,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền cập nhật tiến độ vụ án");
         }
         return ApiResponse.<CaseUpdateResponse>builder()
@@ -153,7 +154,7 @@ public class CaseController {
             @PathVariable("id") Long id,
             @RequestHeader("X-User-Id") Long currentUserId,
             @RequestHeader("X-User-Role") String role) {
-        if (!"LAWYER".equalsIgnoreCase(role)) {
+        if (role == null || !role.toUpperCase().contains("LAWYER")) {
             throw new AppException(ErrorType.FORBIDDEN, "Chỉ luật sư mới có quyền xóa vụ án");
         }
         caseService.deleteCase(id, currentUserId);

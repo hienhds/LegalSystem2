@@ -53,7 +53,7 @@ public class CaseService {
         String kw = (keyword == null) ? "" : keyword.toLowerCase().trim();
         
         if (kw.isEmpty()) {
-            Page<Case> casesPage = "LAWYER".equalsIgnoreCase(role) 
+            Page<Case> casesPage = (role != null && role.toUpperCase().contains("LAWYER"))
                 ? caseRepository.searchCasesForLawyer(userId, "", pageable)
                 : caseRepository.searchCasesForClient(userId, "", pageable);
             
@@ -62,7 +62,7 @@ public class CaseService {
             return casesPage.map(c -> mapToResponseWithNames(c, nameMap));
         }
 
-        List<Case> allCases = "LAWYER".equalsIgnoreCase(role)
+        List<Case> allCases = (role != null && role.toUpperCase().contains("LAWYER"))
                 ? caseRepository.findAllByLawyerId(userId)
                 : caseRepository.findAllByClientId(userId);
 
