@@ -6,3 +6,5 @@ class ChatResponse(BaseModel):
     answer: str
     context: Any
     user: dict
+    conversation_id: str
+    title: str
