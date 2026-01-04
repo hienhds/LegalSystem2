@@ -45,6 +45,8 @@ public class SecurityConfig {
                         // ✅ Các endpoint công khai
                         .requestMatchers(
                                 "/api/users/internal/**",
+
+                                "/search/**",
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/verify",

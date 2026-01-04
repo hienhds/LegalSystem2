@@ -22,8 +22,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - legal-network
     healthcheck:
@@ -108,6 +111,23 @@ services:
       retries: 10
 
 
+  search-service:
+    container_name: search-service
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+      - "50051:50051" # Mở port gRPC
+    environment:
+      - PORT=8090
+      - MONGO_URI=mongodb+srv://hienhoa20022003_db_user:231123@cluster0.wpmpzwz.mongodb.net/document_db?retryWrites=true&w=majority
+      - MONGO_DB=document_db
+    networks:
+      - legal-network
+
+
+
     # ================= DOCUMENT SERVICE =================
   document-service:
     build:
@@ -153,6 +173,46 @@ services:
     networks:
       - legal-network
 
+    # ================= CHATBOT SERVICE (PYTHON) =================
+  chatbot-service:
+    build: ./chatbot-service
+    container_name: chatbot-service
+    ports:
+      - "8091:8091"
+    environment:
+      # ===== APP =====
+      PORT: 8091
+
+      # ===== JWT =====
+      JWT_SECRET: tfcpDkRTBFSltRZhYBfgQmxEF612WEecB0XkiibKf3W+cwZXKDEz+KSjBpPuzbZxnD1HRLgOhtWVgISia6WPaQ==
+      JWT_ALGORITHM: HS256
+
+      # ===== MONGODB =====
+      MONGO_URI: mongodb://admin:231123@mongodb:27017/chatbot_db?authSource=admin
+      MONGO_DB: chatbot_db
+
+      # ===== REDIS (CHAT MEMORY) =====
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      REDIS_PASSWORD: ""
+
+      # ===== SEARCH SERVICE =====
+      SEARCH_SERVICE_URL: http://search-service:8090
+      SEARCH_SERVICE_HOST: search-service
+      SEARCH_SERVICE_PORT: 50051
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      search-service:
+        condition: service_started
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - legal-network
 
   # ================= USER SERVICE =================
   user-service:
@@ -311,17 +371,17 @@ services:
       - "8080:8080"
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-      user-service:
-        condition: service_started
-      chat-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
-      file-service:
-        condition: service_started
+    # depends_on:
+    #   discovery-server:
+    #     condition: service_healthy
+    #   user-service:
+    #     condition: service_started
+    #   chat-service:
+    #     condition: service_started
+    #   notification-service:
+    #     condition: service_started
+    #   file-service:
+    #     condition: service_started
     networks:
       - legal-network
 
@@ -355,3 +415,4 @@ volumes:
   mysql_data:
   mongodb_data:
   minio_data:
+  redis_data:

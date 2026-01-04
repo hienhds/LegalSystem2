@@ -1,20 +1,15 @@
-FROM eclipse-temurin:17-jdk AS build
+FROM python:3.12.6
 
 WORKDIR /app
 
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
-COPY src src
+COPY requirements.txt .
+RUN pip install  -r requirements.txt
 
-# Enforce wrapper (Gradle 9.2.1)
-RUN chmod +x gradlew
-RUN ./gradlew clean build -x test
+COPY app ./app
+COPY models ./models
 
-FROM eclipse-temurin:17-jre
-WORKDIR /app
+ENV PORT=8090
 
-COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8090
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]

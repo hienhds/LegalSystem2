@@ -4,7 +4,13 @@ from pymongo import MongoClient
 # ================== CONFIG ==================
 JSON_FILE = "Data/json_table/demuc.js"
 
-MONGO_URI = "mongodb://admin:231123@localhost:27017/?authSource=admin"
+MONGO_URI = (
+    "mongodb+srv://hienhoa20022003_db_user:231123"
+    "@cluster0.wpmpzwz.mongodb.net/document_db"
+    "?retryWrites=true&w=majority"
+    "&tls=true"
+    "&serverSelectionTimeoutMS=5000"
+)
 MONGO_DB = "document_db"
 MONGO_COLLECTION = "de_muc"
 # ============================================

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package search;
+
+// Định nghĩa Service
+service SearchService {
+  rpc SemanticSearch (SearchRequest) returns (SearchResponse);
+}
+
+// Input: Text cần tìm
+message SearchRequest {
+  string text = 1;
+  int32 top_k = 2;
+}
+
+// Output: Kết quả trả về
+message SearchResponse {
+  repeated SearchResult results = 1;
+}
+
+message SearchResult {
+  string id = 1;
+  string tieu_de = 2;
+  string noi_dung = 3;
+  float score = 4;
+}
