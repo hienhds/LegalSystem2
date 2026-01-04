@@ -16,6 +16,8 @@ import LegalDocuments from "../pages/LegalDocuments";
 import FindLawyer from "../pages/FindLawyer";
 import LawyerDetail from "../pages/LawyerDetail";
 import Contact from "../pages/Contact";
+import Cases from "../pages/Cases";
+import CaseDetail from "../pages/CaseDetail";
 
 export default function AppRouter() {
   return (
@@ -70,6 +72,16 @@ export default function AppRouter() {
         <Route path="/lawyers/:id" element={<LawyerDetail />} />
         <Route path="/lawyer/:id" element={<LawyerDetail />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/cases" element={
+          <ProtectedRoute>
+            <Cases />
+          </ProtectedRoute>
+        } />
+        <Route path="/cases/:id" element={
+          <ProtectedRoute>
+            <CaseDetail />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );

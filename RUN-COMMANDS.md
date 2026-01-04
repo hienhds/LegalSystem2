@@ -35,6 +35,11 @@ cd schedule-service
 cd api-gateway
 .\gradlew bootRun --args='--spring.profiles.active=dev'
 
+cd document-service
+.\gradlew bootRun --args='--spring.profiles.active=dev'
+
+cd case-service
+.\gradlew bootRun --args='--spring.profiles.active=dev'
 ## BƯỚC 10: FRONTEND (Terminal 9)
 cd frontend/my-react-app
 npm run dev

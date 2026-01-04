@@ -1,9 +1,9 @@
 {
   "info": {
     "name": "Schedule Service API Collection",
-    "description": "Complete API collection for Schedule Service (Port 8082)\n\nIncludes:\n- Appointment Management (Create, Confirm, Reject, Cancel, Complete, Rate)\n\n**Usage:**\n1. Login from User Service to get token\n2. Use token for all appointment requests\n3. citizenId and lawyerId are user IDs from User Service",
+    "description": "Complete API collection for Schedule Service (Port 8084)\n\nIncludes:\n- Appointment Management (Create, Confirm, Reject, Cancel, Complete, Rate)\n\n**Usage:**\n1. Login from User Service to get token\n2. Use token for all appointment requests\n3. citizenId and lawyerId are user IDs from User Service",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "auth": {
     "type": "bearer",
@@ -18,7 +18,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8082",
+      "value": "http://localhost:8084",
       "type": "string"
     },
     {

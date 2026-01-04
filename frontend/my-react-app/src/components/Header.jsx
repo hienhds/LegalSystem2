@@ -23,7 +23,7 @@ export default function Header() {
           <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hỏi Đáp</a>
           <Link to="/legal-documents" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Văn Bản Pháp Luật</Link>
           <Link to="/contact" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Liên Hệ</Link>
-          <a className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base" href="#">Hồ Sơ</a>
+          <Link to="/cases" className="text-slate-900 dark:text-slate-200 hover:text-custom-blue-dark font-semibold text-base">Hồ Sơ</Link>
           {user?.roles?.includes("ADMIN") && (
             <button
               onClick={() => navigate("/admin/dashboard")}

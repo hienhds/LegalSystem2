@@ -35,6 +35,11 @@ dependencies {
     // KAFKA - Thêm thư viện này để sửa lỗi NoClassDefFoundError: KafkaTemplate
     implementation 'org.springframework.kafka:spring-kafka'
 
+    // JWT - For token parsing and validation
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
     // gRPC & Protobuf
     implementation 'net.devh:grpc-client-spring-boot-starter:2.15.0.RELEASE'
     implementation 'io.grpc:grpc-netty-shaded:1.58.0'

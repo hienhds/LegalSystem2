@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface UserClient {
     @GetMapping("/api/users/{id}")
-    ApiResponse<UserResponse> getUserById(@PathVariable("id") Long id);
+    UserResponse getUserById(@PathVariable("id") Long id);
 
     @GetMapping("/api/users/internal/ids")
     ApiResponse<List<UserResponse>> getUsersByIds(@RequestParam("ids") List<Long> ids);

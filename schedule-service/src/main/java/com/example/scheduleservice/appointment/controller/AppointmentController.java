@@ -5,7 +5,9 @@ import com.example.scheduleservice.appointment.dto.AppointmentResponse;
 import com.example.scheduleservice.appointment.entity.Appointment.AppointmentStatus;
 import com.example.scheduleservice.appointment.service.AppointmentService;
 import com.example.scheduleservice.common.dto.ApiResponse;
+import com.example.scheduleservice.security.SecurityUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,11 +26,24 @@ import java.util.Map;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final SecurityUtil securityUtil;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AppointmentResponse>> createAppointment(
             @Valid @RequestBody AppointmentRequest request,
-            @RequestParam Long citizenId) {
+            HttpServletRequest httpRequest) {
+        
+        Long citizenId = securityUtil.getCurrentUserId(httpRequest);
+        if (citizenId == null) {
+            ApiResponse<AppointmentResponse> apiResponse = ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized - Invalid token")
+                    .data(null)
+                    .timestamp(Instant.now())
+                    .build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+        }
         
         log.info("Creating appointment for citizen: {}", citizenId);
         
@@ -57,12 +72,24 @@ public class AppointmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
     }
 
-    @GetMapping("/citizen/{citizenId}")
-    public ResponseEntity<ApiResponse<Page<AppointmentResponse>>> getCitizenAppointments(
-            @PathVariable Long citizenId,
+    @GetMapping("/my-appointments")
+    public ResponseEntity<ApiResponse<Page<AppointmentResponse>>> getMyAppointments(
+            HttpServletRequest httpRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) AppointmentStatus status) {
+        
+        Long citizenId = securityUtil.getCurrentUserId(httpRequest);
+        if (citizenId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<Page<AppointmentResponse>>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Getting appointments for citizen: {}", citizenId);
         
@@ -106,8 +133,20 @@ public class AppointmentController {
     @GetMapping("/{appointmentId}")
     public ResponseEntity<ApiResponse<AppointmentResponse>> getAppointmentById(
             @PathVariable Long appointmentId,
-            @RequestParam Long userId,
+            HttpServletRequest httpRequest,
             @RequestParam(defaultValue = "false") boolean isLawyer) {
+        
+        Long userId = securityUtil.getCurrentUserId(httpRequest);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Getting appointment {} for user {}", appointmentId, userId);
                 
@@ -140,8 +179,20 @@ public class AppointmentController {
     @PostMapping("/{appointmentId}/confirm")
     public ResponseEntity<ApiResponse<AppointmentResponse>> confirmAppointment(
             @PathVariable Long appointmentId,
-            @RequestParam Long lawyerId,
+            HttpServletRequest httpRequest,
             @RequestBody(required = false) Map<String, Object> request) {
+        
+        Long lawyerId = securityUtil.getCurrentUserId(httpRequest);
+        if (lawyerId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Lawyer {} confirming appointment {}", lawyerId, appointmentId);
         
@@ -175,8 +226,20 @@ public class AppointmentController {
     @PostMapping("/{appointmentId}/reject")
     public ResponseEntity<ApiResponse<AppointmentResponse>> rejectAppointment(
             @PathVariable Long appointmentId,
-            @RequestParam Long lawyerId,
+            HttpServletRequest httpRequest,
             @RequestBody Map<String, Object> request) {
+        
+        Long lawyerId = securityUtil.getCurrentUserId(httpRequest);
+        if (lawyerId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Lawyer {} rejecting appointment {}", lawyerId, appointmentId);
         
@@ -210,13 +273,26 @@ public class AppointmentController {
     @PostMapping("/{appointmentId}/cancel")
     public ResponseEntity<ApiResponse<AppointmentResponse>> cancelAppointment(
             @PathVariable Long appointmentId,
-            @RequestParam Long userId,
+            HttpServletRequest httpRequest,
             @RequestParam(defaultValue = "false") boolean isLawyer,
-            @RequestBody(required = false) Map<String, Object> request) {
+            @RequestBody Map<String, Object> request) {
+        
+        Long userId = securityUtil.getCurrentUserId(httpRequest);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("User {} cancelling appointment {}", userId, appointmentId);
         
-        String reason = request != null ? (String) request.get("reason") : null;
+        String reason = (String) request.get("reason");
+                
         AppointmentResponse response = appointmentService.cancelAppointment(
                 appointmentId, userId, isLawyer, reason);
         
@@ -246,11 +322,24 @@ public class AppointmentController {
     @PostMapping("/{appointmentId}/complete")
     public ResponseEntity<ApiResponse<AppointmentResponse>> completeAppointment(
             @PathVariable Long appointmentId,
-            @RequestParam Long lawyerId) {
+            HttpServletRequest httpRequest) {
+        
+        Long lawyerId = securityUtil.getCurrentUserId(httpRequest);
+        if (lawyerId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Lawyer {} completing appointment {}", lawyerId, appointmentId);
         
-        AppointmentResponse response = appointmentService.completeAppointment(appointmentId, lawyerId);
+        AppointmentResponse response = appointmentService.completeAppointment(
+                appointmentId, lawyerId);
         
         if (response == null) {
             ApiResponse<AppointmentResponse> apiResponse = ApiResponse.<AppointmentResponse>builder()
@@ -278,8 +367,20 @@ public class AppointmentController {
     @PostMapping("/{appointmentId}/rate")
     public ResponseEntity<ApiResponse<AppointmentResponse>> rateAppointment(
             @PathVariable Long appointmentId,
-            @RequestParam Long citizenId,
+            HttpServletRequest httpRequest,
             @RequestBody Map<String, Object> request) {
+        
+        Long citizenId = securityUtil.getCurrentUserId(httpRequest);
+        if (citizenId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<AppointmentResponse>builder()
+                    .success(false)
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .timestamp(Instant.now())
+                    .build()
+            );
+        }
         
         log.info("Citizen {} rating appointment {}", citizenId, appointmentId);
         

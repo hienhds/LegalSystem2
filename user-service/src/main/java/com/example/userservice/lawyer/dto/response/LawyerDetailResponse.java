@@ -30,6 +30,7 @@ public class LawyerDetailResponse {
     private VerificationStatus verificationStatus;
 
     private List<String> specializationNames;
+    private List<String> roles; // Add roles field for consistency with UserResponse
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

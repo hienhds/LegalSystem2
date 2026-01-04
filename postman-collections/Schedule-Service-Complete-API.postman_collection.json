@@ -1,0 +1,669 @@
+{
+	"info": {
+		"_postman_id": "schedule-service-complete-2026",
+		"name": "Schedule Service - Complete API Collection",
+		"description": "Complete API collection for Schedule Service (Port 8084)\n\n**Includes:**\n- Appointment Management (Create, View, Confirm, Reject, Cancel, Complete, Rate)\n- Lawyer Schedule Management (Availability, Time Slots)\n\n**✨ New: JWT-Based Authentication**\n- Tất cả endpoints tự động lấy userId từ JWT token\n- Không cần truyền citizenId, userId, lawyerId trong query params nữa\n- Chỉ cần login và token sẽ tự động xác định user\n\n**Setup Instructions:**\n1. Login from User Service → accessToken tự động lưu\n2. Tất cả requests sử dụng Bearer token\n3. UserId được extract tự động từ JWT\n\n**Port:** 8084",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "schedule-service-2026"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8084",
+			"type": "string"
+		},
+		{
+			"key": "userServiceUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "appointmentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lawyerId",
+			"value": "2",
+			"type": "string",
+			"description": "Chỉ dùng cho public endpoints như xem lịch luật sư"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Appointment Management",
+			"item": [
+				{
+					"name": "Create Appointment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.appointmentId) {",
+									"        pm.collectionVariables.set('appointmentId', jsonData.data.appointmentId);",
+									"        console.log('Saved appointmentId:', jsonData.data.appointmentId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lawyerId\": 7,\n  \"appointmentDate\": \"2026-01-10\",\n  \"appointmentTime\": \"14:00:00\",\n  \"description\": \"Tư vấn về hợp đồng lao động. Tôi đang có tranh chấp với công ty về thời gian thử việc và các điều khoản trong hợp đồng.\",\n  \"consultationType\": \"ONLINE\",\n  \"meetingLocation\": \"Google Meet\",\n  \"durationMinutes\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments"
+							]
+						},
+						"description": "🎯 **Tạo lịch hẹn mới với luật sư**\n\n✨ **JWT Auto**: CitizenId được lấy tự động từ token\n\n**Request Body:**\n- lawyerId: ID của luật sư (required)\n- appointmentDate: Ngày hẹn (YYYY-MM-DD, phải là ngày tương lai)\n- appointmentTime: Giờ hẹn (HH:mm:ss)\n- description: Mô tả vấn đề cần tư vấn (max 500 ký tự)\n- consultationType: ONLINE hoặc OFFLINE\n- meetingLocation: Địa điểm gặp hoặc link meeting\n- durationMinutes: Thời gian dự kiến (30-240 phút)\n\n**Authentication:** Bearer Token (required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Citizen Appointments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/citizen/{{citizenId}}?page=0&size=10",
+							"host": [
+								"{{baseUrlMy Appointments (Citizen)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/my-appointments?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"my-appointments"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Số trang (bắt đầu từ 0)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Số lượng mỗi trang"
+								},
+								{
+									"key": "status",
+									"value": "PENDING",
+									"description": "Lọc theo trạng thái: PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED",
+									"disabled": true
+								}
+							]
+						},
+						"description": "🎯 **Lấy danh sách lịch hẹn của tôi**\n\n✨ **JWT Auto**: Tự động lấy citizenId từ token\n\n**Query Params:**\n- page: Số trang (default: 0)\n- size: Số lượng/trang (default: 10)\n- status: Lọc theo trạng thái (optional)\n\n**Authentication:** Bearer Token (required
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/lawyer/{{lawyerId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],My Appointments (Lawyer)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/lawyer-appointments?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"lawyer-appointments"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "CONFIRMED",
+									"disabled": true
+								}
+							]
+						},
+						"description": "🎯 **Lấy danh sách lịch hẹn của tôi (Luật sư)**\n\n✨ **JWT Auto**: Tự động lấy lawyerId từ token\n\n**Query Params:**\n- page: Số trang (default: 0)\n- size: Số lượng/trang (default: 10)\n- status: Lọc theo trạng thái (optional)\n\n**Authentication:** Bearer Token (required - phải là Lawyer)
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}?userId={{citizenId}}&isLawyer=false",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}"
+							],
+							"query": [",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}"
+							]
+						},
+						"description": "🎯 **Lấy chi tiết một lịch hẹn**\n\n✨ **JWT Auto**: Tự động kiểm tra quyền truy cập\n\n**Path Params:**\n- appointmentId: ID của lịch hẹn\n\n**Authentication:** Bearer Token (required)
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Tôi đã xác nhận lịch hẹn. Hẹn gặp bạn vào đúng giờ nhé!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/confirm?lawyerId={{lawyerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"confirm"
+							],
+							"query": [
+								{
+									"key": "lawyerId",
+									"value": "{{lawyerId}}",
+									"description": "ID của luật sư xác nhận"",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"confirm"
+							]
+						},
+						"description": "🎯 **Luật sư xác nhận lịch hẹn**\n\n✨ **JWT Auto**: Tự động lấy lawyerId từ token\n\n**Body (optional):**\n- message: Tin nhắn gửi đến người dùng\n\n**Authentication:** Bearer Token (required - phải là Lawyer)
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Xin lỗi, tôi có lịch trình khác trong thời gian này. Vui lòng chọn khung giờ khác.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/reject?lawyerId={{lawyerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"reject"
+							],
+							"query": [
+								{
+									"key": "lawyerId",
+									"value": "{{lawyerId}}"
+								}
+							]
+						},
+						"description": "Luật sư từ chối lịch hẹn\n\n**Body:**\n- reason: Lý do từ chối (required)"
+					},
+					"response": []
+				},
+				{",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"reject"
+							]
+						},
+						"description": "🎯 **Luật sư từ chối lịch hẹn**\n\n✨ **JWT Auto**: Tự động lấy lawyerId từ token\n\n**Body:**\n- reason: Lý do từ chối (required)\n\n**Authentication:** Bearer Token (required - phải là Lawyer
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel?userId={{citizenId}}&isLawyer=false",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Tôi có việc đột xuất không thể tham gia được. Xin lỗi vì sự bất tiện này.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"cancel"
+							]
+						},
+						"description": "🎯 **Hủy lịch hẹn**\n\n✨ **JWT Auto**: Tự động xác định người hủy (citizen hoặc lawyer)\n\n**Body:**\n- reason: Lý do hủy\n\n**Authentication:** Bearer Token (required)\n\n**Note:** Cả citizen và lawyer đều có thể
+						},
+						"description": "Luật sư đánh dấu lịch hẹn đã hoàn thành"
+					},
+					"response": []
+				},
+				{
+					"name": "Rate Appointment (Citizen)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 5,\n  \"comment\": \"Luật sư tư vấn rất chi tiết và nhiệt tình. Tôi đã hiểu rõ vấn đề của mình và biết cách xử lý. Rất hài lòng với dịch vụ!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/rate?citizenId={{citizenId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"rate"
+							],
+							"query": [
+								{
+									"key": "citizenId",
+									"value": "{{citizenId}}"
+								}
+							]
+						},
+						"description": "Người dùng đánh giá lịch hẹn sau khi hoàn thành\n\n**Body:**\n- rating: Điểm đánh giá (1-5)\n- comment: Nhận xét"
+					},
+					"response": []
+				}
+			],
+			"description": "Quản lý lịch hẹn giữa người dùng và luật sư"
+		},
+		{
+			"name": "2. Lawyer Schedule Management",
+			"item": [
+				{
+					"name": "Create Availability",
+					"request": {",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"complete"
+							]
+						},
+						"description": "🎯 **Luật sư đánh dấu lịch hẹn đã hoàn thành**\n\n✨ **JWT Auto**: Tự động lấy lawyerId từ token\n\n**Authentication:** Bearer Token (required - phải là Lawyer)
+							"raw": "{{baseUrl}}/api/lawyer-schedule/availability",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"availability"
+							]
+						},
+						"description": "Tạo khung giờ làm việc cố định cho luật sư - Có thể chọn nhiều ngày cùng lúc\n\n**Body:**\n- lawyerId: ID của luật sư (required)\n- daysOfWeek: Mảng các ngày trong tuần [1-7] (required)\n  - 1 = Thứ 2, 2 = Thứ 3, ..., 7 = Chủ nhật\n  - Có thể chọn 1 hoặc nhiều ngày\n  - VD: [1,2,3,4,5] = Thứ 2 đến Thứ 6\n- startTime: Giờ bắt đầu (HH:mm:ss) (required)\n- endTime: Giờ kết thúc (HH:mm:ss) (required)\n- workAddress: Địa chỉ làm việc (required, max 500 ký tự)\n- workAddressDetails: Chi tiết địa chỉ như số phòng, tầng (optional, max 200 ký tự)\n- isActive: Trạng thái hoạt động (default: true)\n\n**Response:**\nTrả về danh sách các khung giờ đã tạo cho từng ngày\n- Nếu ngày đã tồn tại sẽ bỏ qua và thông báo trong message"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Availability (Single Day)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lawyerId\": {{lawyerId}},\n  \"daysOfWeek\": [6],\n  \"startTime\": \"10:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"workAddress\": \"Văn phòng luật sư XYZ, 456 Lê Lợi, Quận 1, TP.HCM\",\n  \"workAddressDetails\": \"Tầng 3\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"rate"
+							]
+						},
+						"description": "🎯 **Người dùng đánh giá lịch hẹn sau khi hoàn thành**\n\n✨ **JWT Auto**: Tự động lấy citizenId từ token\n\n**Body:**\n- rating: Điểm đánh giá (1-5)\n- comment: Nhận xét\n\n**Authentication:** Bearer Token (required - phải là Citizen)"
+					},
+					"response": []
+				},
+				{
+					"name": "Login (User Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"        console.log('✅ Saved accessToken for Schedule Service');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"vutienquang86@gmail.com\",\n  \"password\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/auth/login",
+							"host": [
+								"{{userServiceUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "🔐 **Login để lấy JWT token**\n\nToken sẽ tự động lưu vào collection variables và dùng cho tất cả requests
+				},
+				{
+					"name": "Update Availability",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lawyerId\": {{lawyerId}},\n  \"daysOfWeek\": [1],\n  \"startTime\": \"08:30:00\",\n  \"endTime\": \"18:00:00\",\n  \"workAddress\": \"Tầng 5, Toà nhà ABC, 123 Đường Nguyễn Huệ, Quận 1, TP.HCM\",\n  \"workAddressDetails\": \"Phòng 501, bên cạnh thang máy\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/availability/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"availability",
+								"1"
+							]
+						},
+						"description": "Cập nhật khung giờ làm việc\n\n**Path Params:**\n- availabilityId: ID của khung giờ\n\n**Body:**\n- Giống như Create nhưng chỉ sử dụng ngày đầu tiên trong daysOfWeek để update"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Availability",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/availability/1?lawyerId={{lawyerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"availability",
+								"1"
+							],
+							"query": [
+								{
+									"key": "lawyerId",
+									"value": "{{lawyerId}}",
+									"description": "ID của luật sư (để xác thực quyền xóa)"
+								}
+							]
+						},
+						"description": "Xóa khung giờ làm việc\n\n**Query Params:**\n- lawyerId: ID của luật sư để xác thực quyền sở hữu"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Availabilities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/availability?lawyerId={{lawyerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"availability"
+							],
+							"query": [
+								{
+									"key": "lawyerId",
+									"value": "{{lawyerId}}",
+									"description": "ID của luật sư"
+								}
+							]
+						},
+						"description": "Lấy danh sách khung giờ làm việc của luật sư hiện tại\n\nTrả về tất cả các khung giờ (active và inactive)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer Availabilities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/availability/lawyer/{{lawyerId}}?activeOnly=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"availability",
+								"lawyer",
+								"{{lawyerId}}"
+							],
+							"query": [
+								{
+									"key": "activeOnly",
+									"value": "true",
+									"description": "true = chỉ lấy active, false = tất cả"
+								}
+							]
+						},
+						"description": "Lấy khung giờ làm việc của một luật sư cụ thể (public)\n\n**Query Params:**\n- activeOnly: true (default) = chỉ lấy khung giờ đang hoạt động"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lawyer Schedule by Date",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/schedule/lawyer/{{lawyerId}}?date=2026-01-10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"schedule",
+								"lawyer",
+								"{{lawyerId}}"
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2026-01-10",
+									"description": "Ngày cần xem lịch (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Xem lịch làm việc của luật sư trong ngày cụ thể\n\nTrả về:\n- Các khung giờ trống (available)\n- Các khung giờ đã đặt (booked)\n- Các khung giờ bị khóa (blocked)"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Lawyer Availability",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/lawyer-schedule/check-availability/lawyer/{{lawyerId}}?dateTime=2026-01-10T14:00:00&durationMinutes=60",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"lawyer-schedule",
+								"check-availability",
+								"lawyer",
+								"{{lawyerId}}"
+							],
+							"query": [
+								{
+									"key": "dateTime",
+									"value": "2026-01-10T14:00:00",
+									"description": "Thời gian cần kiểm tra (ISO 8601)"
+								},
+								{
+									"key": "durationMinutes",
+									"value": "60",
+									"description": "Thời lượng dự kiến (phút)"
+								}
+							]
+						},
+						"description": "Kiểm tra luật sư có rảnh trong khung giờ cụ thể không"
+					},
+					"response": []
+				}
+			],
+			"description": "Quản lý lịch làm việc và khung giờ trống của luật sư"
+		}
+	]
+}

@@ -6,19 +6,20 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
-    @JsonAlias("userId") // Map từ "userId" của user-service sang "id"
-    private Long id;
-    
+    private Long userId;
     private String username;
     private String email;
     private String fullName;
     private String phoneNumber;
-    private Set<String> roles;
+    private String address;
+    private String avatarUrl;
+    private List<String> roles;
+    private Long lawyerId;
 }

@@ -179,6 +179,25 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/search-by-keyword")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsersByNameOrEmail(
+            @RequestParam String keyword,
+            HttpServletRequest request
+    ) {
+        List<UserResponse> users = userService.searchByNameOrEmail(keyword);
+
+        ApiResponse<List<UserResponse>> response = ApiResponse.<List<UserResponse>>builder()
+                .success(true)
+                .status(HttpStatus.OK.value())
+                .message("Tìm kiếm người dùng thành công")
+                .data(users)
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping(value = "/register-lawyer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<LawyerResponse>> registerAsLawyer(
             @RequestParam("data") String data,

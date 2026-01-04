@@ -53,7 +53,7 @@ public class CaseService {
         String kw = (keyword == null) ? "" : keyword.toLowerCase().trim();
         
         if (kw.isEmpty()) {
-            Page<Case> casesPage = "LAWYER".equalsIgnoreCase(role) 
+            Page<Case> casesPage = (role != null && role.toUpperCase().contains("LAWYER"))
                 ? caseRepository.searchCasesForLawyer(userId, "", pageable)
                 : caseRepository.searchCasesForClient(userId, "", pageable);
             
@@ -62,7 +62,7 @@ public class CaseService {
             return casesPage.map(c -> mapToResponseWithNames(c, nameMap));
         }
 
-        List<Case> allCases = "LAWYER".equalsIgnoreCase(role)
+        List<Case> allCases = (role != null && role.toUpperCase().contains("LAWYER"))
                 ? caseRepository.findAllByLawyerId(userId)
                 : caseRepository.findAllByClientId(userId);
 
@@ -113,9 +113,8 @@ public class CaseService {
             var res = userClient.getUsersByIds(ids);
             if (res != null && res.getResult() != null) {
                 for (UserResponse u : res.getResult()) {
-                    // Chú ý: DTO UserResponse ở case-service tôi đã gắn @JsonAlias("userId") cho trường id
-                    if (u.getId() != null) {
-                        map.put(u.getId(), u);
+                    if (u.getUserId() != null) {
+                        map.put(u.getUserId(), u);
                     }
                 }
             }
@@ -132,8 +131,8 @@ public class CaseService {
             var userRes = userClient.getUsersByIds(userIds);
             if (userRes != null && userRes.getResult() != null) {
                 userRes.getResult().forEach(u -> {
-                    if (u.getId() != null) {
-                        nameMap.put(u.getId(), u.getFullName());
+                    if (u.getUserId() != null) {
+                        nameMap.put(u.getUserId(), u.getFullName());
                     }
                 });
             }

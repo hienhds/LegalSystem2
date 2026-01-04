@@ -181,6 +181,12 @@ public class LawyerService {
                                 .map(ls -> ls.getSpecialization().getSpecName())
                                 .toList()
                 )
+                
+                .roles(
+                        lawyer.getUser().getUserRoles().stream()
+                                .map(ur -> ur.getRole().getRoleName())
+                                .toList()
+                )
 
                 .createdAt(lawyer.getCreatedAt())
                 .updatedAt(lawyer.getUpdatedAt())

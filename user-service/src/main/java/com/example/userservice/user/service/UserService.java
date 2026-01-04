@@ -102,4 +102,12 @@ public class UserService {
         return userResponse;
     }
 
+    public List<UserResponse> searchByNameOrEmail(String keyword) {
+        List<User> users = userRepository.findByEmailOrFullNameContaining(keyword);
+        
+        return users.stream()
+                .map(UserResponse::from)
+                .toList();
+    }
+
 }

@@ -34,6 +34,12 @@ public class LawyerAvailability {
     @Column(nullable = false)
     private LocalTime endTime;
     
+    @Column(nullable = false, length = 500)
+    private String workAddress;
+    
+    @Column(length = 200)
+    private String workAddressDetails;
+    
     @Column(nullable = false)
     @Builder.Default
     private Boolean isActive = true;

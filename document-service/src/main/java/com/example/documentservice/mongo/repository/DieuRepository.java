@@ -31,6 +31,13 @@ public interface DieuRepository extends MongoRepository<DieuDocument, ObjectId> 
     @Query("{ 'chi_dan.text': { $regex: ?0, $options: 'i' } }")
     Optional<DieuDocument> findOneByChiDanText(String chiDanText);
 
+    /**
+     * Tìm điều theo tiêu đề chứa text cụ thể
+     * VD: text = "Điều 1.6.LQ.16."
+     * MongoDB: { "tieu_de": { $regex: "^\u0110iều 1\\.6\\.LQ\\.16\\.", $options: "" } }
+     */
+    List<DieuDocument> findByTieuDeContaining(String text);
+
     @Query("""
     {
       'chu_de_id': ?0,

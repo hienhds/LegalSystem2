@@ -1,0 +1,453 @@
+{
+  "info": {
+    "_postman_id": "case-service-complete-2026",
+    "name": "Case Service API - Complete Collection",
+    "description": "Complete API collection for Case Service (Port 8086)\n\nIncludes:\n- Case Management (Create, List, Get, Update, Delete)\n- Document Management (Upload, Download, View, Delete)\n- Progress Tracking\n\n**Usage:**\n1. Login from Authentication section → auto-save accessToken\n2. Use Bearer token automatically for all case requests\n3. Most endpoints require LAWYER role\n\n**Important Headers:**\n- X-User-Id: Current user ID (auto from login)\n- X-User-Role: LAWYER or CLIENT\n- Authorization: Bearer {{accessToken}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8086",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication (User Service)",
+      "item": [
+        {
+          "name": "Login Lawyer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "        console.log('Saved tokens. userId:', jsonData.data.userId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"lawyer@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/api/auth/login",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login as LAWYER to get access token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Case Management",
+      "item": [
+        {
+          "name": "Create Case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.result && jsonData.result.id) {",
+                  "        pm.collectionVariables.set('caseId', jsonData.result.id);",
+                  "        console.log('Saved caseId:', jsonData.result.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Vụ án tranh chấp hợp đồng bất động sản\",\n  \"description\": \"Khách hàng A khởi kiện khách hàng B về tranh chấp quyền sở hữu đất đai tại Q.1, TP.HCM\",\n  \"clientId\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases"]
+            },
+            "description": "Create new case (LAWYER only)\n\nRequired fields:\n- title: Case title\n- description: Case description\n- clientId: Client user ID\n\nlawyerId will be taken from X-User-Id header"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Cases (with pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Page size"
+                },
+                {
+                  "key": "keyword",
+                  "value": "tranh chấp",
+                  "description": "Search keyword",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of cases for current user (paginated)\n\n- LAWYER: can see all cases they handle\n- CLIENT: can see their own cases\n\nOptional query params:\n- page: page number (default 0)\n- size: page size (default 10)\n- keyword: search in title/description"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Case By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}"]
+            },
+            "description": "Get detailed information of a specific case\n\nOnly accessible by:\n- Case lawyer\n- Case client"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Case",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Vụ án tranh chấp hợp đồng bất động sản - Cập nhật\",\n  \"description\": \"Đã bổ sung thêm tài liệu chứng minh quyền sở hữu. Chuẩn bị nộp đơn kiện lên tòa án.\",\n  \"clientId\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}"]
+            },
+            "description": "Update case information (LAWYER only)\n\nCan update:\n- title\n- description\n- clientId"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Case",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}"]
+            },
+            "description": "Delete a case (LAWYER only)\n\nOnly the case lawyer can delete"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Progress Tracking",
+      "item": [
+        {
+          "name": "Update Progress",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Đã hoàn thành việc thu thập tài liệu. Tiến hành soạn đơn kiện.\",\n  \"status\": \"IN_PROGRESS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}", "progress"]
+            },
+            "description": "Update case progress (LAWYER only)\n\nRequired fields:\n- description: Progress update description\n- status: Case status\n\nStatus values:\n- PENDING: Chờ tiếp nhận\n- IN_PROGRESS: Đang thực hiện\n- RESOLVED: Đã giải quyết\n- CLOSED: Đã đóng"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Document Management",
+      "item": [
+        {
+          "name": "Upload Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.result) {",
+                  "        // Extract document ID from response message or URL if provided",
+                  "        console.log('Document uploaded:', jsonData.result);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Document file to upload (PDF, DOCX, etc.)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}", "documents"]
+            },
+            "description": "Upload document to case (LAWYER only)\n\nRequired:\n- file: multipart/form-data file\n\nSupported formats: PDF, DOCX, DOC, XLS, XLSX, etc."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Download URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}/documents/{{documentId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}", "documents", "{{documentId}}", "download"]
+            },
+            "description": "Get download URL for a case document\n\nReturns a temporary signed URL to download the file"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document View URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}/documents/{{documentId}}/view",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}", "documents", "{{documentId}}", "view"]
+            },
+            "description": "Get view URL for a case document\n\nReturns a temporary signed URL to view/preview the file"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "LAWYER",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cases/{{caseId}}/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cases", "{{caseId}}", "documents", "{{documentId}}"]
+            },
+            "description": "Delete a case document (LAWYER only)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

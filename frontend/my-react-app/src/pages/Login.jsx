@@ -39,6 +39,8 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
+      console.log("Login response:", data); // Debug: xem toàn bộ response
+      
       if (!res.ok || data.success === false) {
         // Nếu tài khoản chưa kích hoạt
         if (data.message && data.message.toLowerCase().includes("chưa được kích hoạt")) {
